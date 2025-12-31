@@ -53,32 +53,25 @@ LONG_TEXT_THRESHOLD = (
 )
 
 # Regex to strip ANSI escape sequences from terminal output
-ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+ANSI_ESCAPE_PATTERN = re.compile(
+    r"""
+    \x1b(?:\].*?(?:\x07|\x1b\\)  # OSC sequences
+    |\[[0-?]*[ -/]*[@-~]         # CSI sequences
+    |[@-Z\\-_])                  # 7-bit C1 control codes
+    """,
+    re.VERBOSE | re.DOTALL,
+)
 
 
 def strip_ansi(text):
-    """Strip ANSI escape sequences from terminal output.
-
-    Args:
-        text: String that may contain ANSI escape codes.
-
-    Returns:
-        The text with all ANSI escape sequences removed.
-    """
+    """Strip ANSI escape sequences from terminal output."""
     if not text:
         return text
     return ANSI_ESCAPE_PATTERN.sub("", text)
 
 
 def is_content_block_array(text):
-    """Check if a string is a JSON array of content blocks.
-
-    Args:
-        text: String to check.
-
-    Returns:
-        True if the string is a valid JSON array of content blocks.
-    """
+    """Check if a string is a JSON array of content blocks."""
     if not text or not isinstance(text, str):
         return False
     text = text.strip()
@@ -88,24 +81,13 @@ def is_content_block_array(text):
         parsed = json.loads(text)
         if not isinstance(parsed, list):
             return False
-        # Check if items look like content blocks
-        for item in parsed:
-            if isinstance(item, dict) and "type" in item:
-                return True
-        return False
+        return any(isinstance(item, dict) and "type" in item for item in parsed)
     except (json.JSONDecodeError, TypeError):
         return False
 
 
 def render_content_block_array(blocks):
-    """Render an array of content blocks.
-
-    Args:
-        blocks: List of content block dicts.
-
-    Returns:
-        HTML string with all blocks rendered.
-    """
+    """Render an array of content blocks."""
     parts = []
     for block in blocks:
         parts.append(render_content_block(block))
@@ -113,16 +95,7 @@ def render_content_block_array(blocks):
 
 
 def highlight_code(code, filename=None, language=None):
-    """Apply syntax highlighting to code using Pygments.
-
-    Args:
-        code: The source code to highlight.
-        filename: Optional filename to detect language from extension.
-        language: Optional explicit language name.
-
-    Returns:
-        HTML string with syntax highlighting, or escaped plain text if highlighting fails.
-    """
+    """Apply syntax highlighting to code using Pygments."""
     if not code:
         return ""
 
@@ -2396,4 +2369,5 @@ def all_cmd(source, output, include_agents, dry_run, open_browser, quiet):
 
 
 def main():
+    # print("RUNNING LOCAL VERSION!!")
     cli()

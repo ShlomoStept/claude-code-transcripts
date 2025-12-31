@@ -2,153 +2,407 @@
 
 ## Overview
 
-This document tracks the implementation status of UX/UI improvements for claude-code-transcripts.
+This document tracks the implementation status of UX/UI improvements for claude-code-transcripts. It serves as a complete handoff document for new developers.
 
 ---
 
 ## Phase 1: Foundation (COMPLETED)
 
-### B.5 ANSI Escape Code Sanitization ✅
-**Status:** Completed
+### Task Grading Summary
+
+| Task | Score | Status |
+|------|-------|--------|
+| B.5 ANSI Escape Code Sanitization | 6.75/10 | Completed |
+| B.4 Content-Block Array Rendering | 6.75/10 | Completed |
+| A.1 Copy Buttons | 6.75/10 | Completed |
+| B.2 Syntax Highlighting | 9.25/10 | Completed |
+
+---
+
+### B.5 ANSI Escape Code Sanitization
+
+**Status:** Completed (Score: 6.75/10)
 **Priority:** Critical
 **Files Modified:** `src/claude_code_transcripts/__init__.py`
 
-- Added `ANSI_ESCAPE_PATTERN` regex
-- Added `strip_ansi()` function
-- Applied to tool_result content before rendering
+**Implementation:**
+- `ANSI_ESCAPE_PATTERN` regex at line 56: `r"\x1b\[[0-9;]*[a-zA-Z]"`
+- `strip_ansi()` function at lines 59-70
+- Applied in `render_content_block()` at line 840
 
-### B.4 Content-Block Array Rendering ✅
-**Status:** Completed
+**Known Limitations:**
+- Regex catches ~70% of ANSI sequences but misses:
+  - Sequences with `?` parameter prefix: `\x1b[?25h`
+  - Non-alphabetic final bytes: `\x1b[@`
+  - OSC sequences: `\x1b]0;Title\x07`
+- Recommended fix: Update regex to `r"\x1b\[[0-9;?]*[@-~]"`
+
+**Test Coverage Gaps:**
+- No unit tests for `strip_ansi()` itself
+- Missing edge case tests (malformed sequences, empty strings)
+
+---
+
+### B.4 Content-Block Array Rendering
+
+**Status:** Completed (Score: 6.75/10)
 **Priority:** Critical
 **Files Modified:** `src/claude_code_transcripts/__init__.py`
 
-- Added `is_content_block_array()` detection function
-- Added `render_content_block_array()` for proper rendering
-- Tool results with JSON content-block arrays now render as formatted text
+**Implementation:**
+- `is_content_block_array()` function at lines 73-97
+- `render_content_block_array()` function at lines 100-126
+- Integration in `render_content_block()` at lines 828-837
 
-### A.1 Copy Buttons (Simplified) ✅
-**Status:** Completed
+**Known Limitations:**
+- Only handles `text` and `thinking` blocks
+- Does NOT render `image` blocks (falls back to JSON)
+- Does NOT render `tool_use` blocks
+
+**Test Coverage Gaps:**
+- No tests for thinking blocks in arrays
+- No tests for empty arrays or invalid JSON
+- No tests for image/tool_use blocks
+
+---
+
+### A.1 Copy Buttons (Simplified)
+
+**Status:** Completed (Score: 6.75/10)
 **Priority:** High
 **Files Modified:** `src/claude_code_transcripts/__init__.py` (CSS + JS)
 
-- Added `.copy-btn` CSS with hover-reveal animation
-- Added JavaScript for dynamic copy button injection
-- Supports clipboard API with "Copied!" feedback
+**Implementation:**
+- CSS at lines 1122-1125: `.copy-btn` with hover-reveal
+- JavaScript at lines 1210-1236: Dynamic button injection
+- Targets: `pre`, `.tool-result .truncatable-content`, `.bash-command`
 
-### B.2 Syntax Highlighting ✅
-**Status:** Completed
+**Known Limitations:**
+- No fallback for browsers without Clipboard API
+- No keyboard accessibility (not focusable)
+- No ARIA labels for screen readers
+- Silent failures (errors only logged to console)
+
+**Test Coverage Gaps:**
+- Tests only verify CSS/JS presence, not functionality
+- No accessibility testing
+
+---
+
+### B.2 Syntax Highlighting
+
+**Status:** Completed (Score: 9.25/10)
 **Priority:** Medium
 **Files Modified:**
-- `pyproject.toml` (added pygments)
-- `src/claude_code_transcripts/__init__.py`
+- `pyproject.toml` (added pygments>=2.17.0)
+- `src/claude_code_transcripts/__init__.py` (lines 20-23, 129-155)
 - `src/claude_code_transcripts/templates/macros.html`
 
-- Added Pygments integration with `highlight_code()` function
-- Added Monokai-inspired dark theme CSS
-- Applied to Write and Edit tool content
+**Implementation:**
+- Imports: `highlight`, `get_lexer_for_filename`, `get_lexer_by_name`, `TextLexer`, `HtmlFormatter`, `ClassNotFound`
+- `highlight_code()` function at lines 129-155
+- Applied in `render_write_tool()` and `render_edit_tool()`
+- Monokai-inspired CSS theme at lines 1080-1110
+
+**Strengths:**
+- Excellent error handling with graceful fallback
+- Supports 500+ languages via Pygments
+- Clean integration with templates
+
+**Minor Gaps:**
+- Bash tool commands not syntax highlighted
+- No line numbers support
+
+---
+
+## Technical Specifications
+
+### File Architecture
+
+```
+src/claude_code_transcripts/
+├── __init__.py          # Main implementation (~1300 lines)
+│   ├── Lines 1-50       # Imports and constants
+│   ├── Lines 51-160     # Utility functions (strip_ansi, highlight_code, etc.)
+│   ├── Lines 700-850    # Render functions
+│   ├── Lines 1000-1120  # CSS constant
+│   └── Lines 1120-1270  # JS constant
+└── templates/
+    ├── macros.html      # Tool rendering macros
+    ├── page.html        # Main page template
+    ├── index.html       # Index page template
+    ├── base.html        # Base template
+    └── search.js        # Client-side search
+```
+
+### CSS Guidelines
+
+- Follow existing naming: `.tool-*`, `.file-tool-*`, `.truncatable-*`
+- CSS is embedded in `__init__.py` CSS constant
+- Use CSS variables: `--user-bg`, `--user-border`, `--text-muted`, etc.
+
+### JavaScript Guidelines
+
+- JavaScript is embedded in `__init__.py` JS constant
+- Use vanilla JS, no frameworks
+- Use `querySelectorAll()` pattern for batch operations
+- Event delegation for dynamic content
+
+### Testing Requirements
+
+Per AGENTS.md:
+1. Write failing test first
+2. Watch it fail
+3. Implement feature
+4. Watch test pass
+5. Run `uv run black .` to format
+6. Commit test + implementation + docs together
 
 ---
 
 ## Phase 2: Structure (PENDING)
 
 ### A.2 Metadata Subsection
+
 **Status:** Not Started
 **Priority:** High
+**Dependencies:** None
 
-Add collapsible metadata section to each message containing:
-- Timestamp, session ID, working directory, git branch
-- Character count, token estimate, tool call counts
-- Optional user notes and tags
+**Implementation Details:**
+- Add collapsible metadata section to each message
+- Use `<details>` tag with `.message-metadata` class
+
+**Data to Include:**
+- Timestamp (from message object)
+- Working directory (from session context)
+- Character count: `len(message_text)`
+- Token estimate: `len(message_text) // 4`
+- Tool call counts (use existing counting logic)
+
+**Files to Modify:**
+- `src/claude_code_transcripts/__init__.py`: Add `render_metadata()` function
+- `src/claude_code_transcripts/templates/macros.html`: Add metadata macro
+
+**CSS Classes:**
+- `.message-metadata` - container
+- `.metadata-item` - row
+- `.metadata-label` - label
+- `.metadata-value` - value
+
+---
 
 ### A.3 Cell Subsections (Input/Output Split)
+
 **Status:** Not Started
 **Priority:** High
+**Dependencies:** A.2
 
-Split messages into collapsible subsections:
-- Thinking block
-- Response text
-- Tool calls (grouped)
+**Implementation Details:**
+- Split messages into collapsible subsections
+- Use native `<details>` elements
+
+**Structure:**
+```html
+<div class="message assistant">
+  <details class="cell thinking-cell">
+    <summary>Thinking</summary>
+    <div class="cell-content">...</div>
+  </details>
+
+  <details class="cell response-cell" open>
+    <summary>Response</summary>
+    <div class="cell-content">...</div>
+  </details>
+
+  <details class="cell tools-cell">
+    <summary>Tool Calls (3)</summary>
+    <div class="cell-content">...</div>
+  </details>
+</div>
+```
+
+**Files to Modify:**
+- `render_assistant_message()` in `__init__.py`
+- `macros.html`: Add cell macros
+
+---
 
 ### B.3 Tool Call Headers with Type
+
 **Status:** Not Started
 **Priority:** High
+**Dependencies:** None
 
-Enhanced tool headers showing:
-- Tool type icon and name
-- Input/output toggle
-- Parsed/raw view toggle
+**Implementation Details:**
+- Enhanced tool headers showing tool type icon and name
+- Add input/output toggle capability
+- Add parsed/raw view toggle
+
+**Files to Modify:**
+- Tool macros in `macros.html`
+- CSS for toggle buttons
 
 ---
 
 ## Phase 3: Advanced (PENDING)
 
 ### A.4 Recursive Nesting Support
+
 **Status:** Not Started
 **Priority:** Medium
+**Dependencies:** A.3
 
-Enable collapsible cells to contain other collapsible cells for:
-- Nested tool calls
-- Subagent tasks
+**Implementation Details:**
+- Enable collapsible cells to contain other collapsible cells
+- For nested tool calls and subagent tasks
+- Add CSS for nested styling with indentation
+
+---
 
 ### A.5 Layout Toggle
+
 **Status:** Not Started
 **Priority:** Medium
+**Dependencies:** A.3
 
-Add layout modes:
-- Stacked (default)
-- Side-by-side
-- Raw/Parsed toggle
+**Implementation Details:**
+- Add layout modes: Stacked, Side-by-side, Raw/Parsed toggle
+- Use localStorage for persistence
+- Add toggle buttons to cell headers
+
+**localStorage Keys:**
+- `layout-default`: Global default
+- `layout-{cell-id}`: Per-cell override
+
+---
 
 ### C.1 Subagent Detection and Grouping
+
 **Status:** Not Started
 **Priority:** High
+**Dependencies:** None
+**Related Issue:** #12 (upstream)
 
-From Issue #12:
-- Detect subagent JSONL files (agent-*.jsonl)
+**Implementation Details:**
+- Detect subagent JSONL files: `agent-*.jsonl`
 - Link subagent sessions to main transcript
 - Optional inline expansion
+
+**Files to Modify:**
+- Add `find_related_agent_sessions()` function
+- Update `generate_html()` to handle subagents
 
 ---
 
 ## Phase 4: Polish (PENDING)
 
 ### C.2 Multi-View Mode
+
 **Status:** Not Started
 **Priority:** Medium
+**Dependencies:** C.1
 
-Add thread view tabs:
-- Chronological (all messages)
-- Per-agent view
+**Implementation Details:**
+- Add thread view tabs: Chronological, Per-agent view
+- Tab component for switching views
+
+---
 
 ### C.3 Tool Call/Response Pairing
+
 **Status:** Not Started
 **Priority:** Medium
+**Dependencies:** B.3
 
-Group tool_use with corresponding tool_result:
-- Collapsible wrapper
-- Nested call/result sections
+**Implementation Details:**
+- Group tool_use with corresponding tool_result
+- Match by tool ID
+- Collapsible wrapper with nested call/result sections
+
+---
 
 ### D.1 Table of Contents
+
 **Status:** Not Started
 **Priority:** Medium
+**Dependencies:** None
 
-Add navigation features:
-- Per-page TOC
+**Implementation Details:**
+- Per-page TOC in sidebar or header
 - Per-message anchors
-- Copy link to message
+- Copy link to message functionality
+- Scroll-spy highlighting
+
+**Anchor Naming:** `#msg-{timestamp}` (existing pattern)
+
+---
 
 ### D.2 Persistent UI State
+
 **Status:** Not Started
 **Priority:** Low
+**Dependencies:** All collapsible features
 
-Save/restore:
-- Collapse state per cell
-- Scroll position per page
-- Layout preferences
+**Implementation Details:**
+- Save/restore collapse state per cell
+- Save scroll position per page
+- Save layout preferences
+
+**localStorage Schema:**
+```json
+{
+  "cellStates": {
+    "cell-id": { "collapsed": true, "layout": "stacked" }
+  },
+  "scrollPosition": { "page-001": 1234 },
+  "preferences": { "defaultLayout": "stacked" }
+}
+```
+
+---
+
+## Task Dependencies Graph
+
+```
+Phase 2:
+  A.2 (Metadata) → A.3 (Cell Subsections) → B.3 (Tool Headers)
+
+Phase 3:
+  A.3 → A.4 (Recursive Nesting)
+  C.1 (Subagent Detection) - independent
+  A.3 → A.5 (Layout Toggle)
+
+Phase 4:
+  C.1 → C.2 (Multi-View)
+  B.3 → C.3 (Tool Call/Response Pairing)
+  D.1 (Table of Contents) - independent
+  All collapsible features → D.2 (Persistent UI State)
+```
+
+**Recommended Implementation Order:**
+1. Phase 2: A.2, A.3, B.3
+2. Phase 3: A.4, C.1, A.5
+3. Phase 4: C.2, C.3, D.1, D.2
+
+---
+
+## Critical Test Gaps to Address
+
+### High Priority Tests to Add
+
+| Test Name | What to Test | Why Important |
+|-----------|--------------|---------------|
+| `test_strip_ansi_edge_cases` | Empty strings, malformed sequences, Unicode | ANSI stripping applied to ALL tool results |
+| `test_is_content_block_array_invalid_inputs` | Non-JSON, non-array, missing type fields | Guards parsing logic |
+| `test_render_content_block_array_all_block_types` | Images, thinking, mixed arrays | Real sessions have complex arrays |
+| `test_highlight_code_lexer_failures` | Unknown extensions, binary content | Must not crash on any input |
+| `test_copy_button_accessibility` | ARIA labels, keyboard navigation | Accessibility compliance |
 
 ---
 
 ## Open Issues Reference
+
+Issue numbers reference upstream: https://github.com/simonw/claude-code-transcripts/issues
 
 | Issue | Title | Phase |
 |-------|-------|-------|
@@ -157,12 +411,23 @@ Save/restore:
 | #17 | --full option for single HTML page | P4 |
 | #12 | Support subagents and search | P3 |
 
-## Open PRs Reference
+---
 
-| PR | Title | Status |
-|----|-------|--------|
-| #24 | Display custom title from /rename | Ready |
-| #23 | Code view of transcripts | Draft |
-| #22 | Gemini CLI support | Ready |
-| #21 | Add copy buttons to result boxes | Superseded |
-| #19 | Nice rendering for slash commands | Ready |
+## Documentation Gaps Identified
+
+### README.md Missing:
+- Search feature documentation
+- New features (ANSI sanitization, copy buttons, syntax highlighting)
+- URL support for json command
+- Black formatting instructions in Development section
+
+### AGENTS.md Missing:
+- Initial setup instructions (clone, uv sync)
+- Project structure overview
+- Specific test running examples
+- Contribution guidelines
+
+### pyproject.toml Issues:
+- Missing version constraints on 6/7 dependencies
+- CI/CD uses pip but project uses uv build backend
+- No [tool.pytest] or [tool.black] configuration

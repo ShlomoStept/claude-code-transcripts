@@ -160,7 +160,76 @@ Per AGENTS.md:
 
 ---
 
-## Phase 2: Structure (PENDING)
+## Phase 2: Structure (PARTIALLY COMPLETED)
+
+### Task Grading Summary - Phase 2
+
+| Task | Score | Status |
+|------|-------|--------|
+| A.3 Cell Subsections | 9.0/10 | Completed |
+| B.6 Tool Markdown Rendering | 8.5/10 | Completed |
+| A.2 Metadata Subsection | - | Not Started |
+| B.3 Tool Call Headers | - | Not Started |
+
+---
+
+### A.3 Cell Subsections (Input/Output Split)
+
+**Status:** Completed (Score: 9.0/10)
+**Priority:** High
+**Dependencies:** None
+
+**Implementation:**
+- `group_blocks_by_type()` function groups content blocks into thinking/text/tools
+- `render_assistant_message()` and `render_assistant_message_with_tool_pairs()` create cell structure
+- `cell` macro in macros.html creates collapsible `<details>` wrapper
+- CSS for `.cell`, `.thinking-cell`, `.response-cell`, `.tools-cell`
+- Per-cell copy buttons with keyboard accessibility and ARIA labels
+
+**Features:**
+- Thinking cell: closed by default
+- Response cell: open by default
+- Tools cell: closed by default, shows count
+- Expand/collapse indicator (▶ rotates on open)
+- Copy button per cell with "Copied!" feedback
+
+**Test Coverage:**
+- `test_group_blocks_by_type`: Verifies block grouping
+- `test_cell_structure_in_assistant_message`: Verifies cell HTML structure
+- `test_thinking_cell_closed_by_default`: Verifies default state
+- `test_response_cell_open_by_default`: Verifies default state
+- `test_tools_cell_shows_count`: Verifies tool count display
+- `test_cell_has_copy_button`: Verifies copy button presence
+- `test_cell_copy_button_aria_label`: Verifies accessibility
+
+---
+
+### B.6 Tool Markdown Rendering
+
+**Status:** Completed (Score: 8.5/10)
+**Priority:** High
+**Dependencies:** None
+
+**Implementation:**
+- `render_json_with_markdown()` function renders JSON with Markdown in string values
+- `render_bash_tool()` renders description as Markdown HTML
+- Generic tool handler renders description as Markdown HTML
+- Updated macros use `|safe` filter for pre-rendered HTML
+- CSS classes for styled JSON: `.json-key`, `.json-string-value`, `.json-number`, etc.
+
+**Features:**
+- Tool descriptions render as Markdown (bold, italic, links, code)
+- JSON string values render inline Markdown
+- Syntax-highlighted JSON keys and types
+- Preserves JSON structure visually
+
+**Test Coverage:**
+- `test_render_bash_tool_markdown_description`: Verifies Markdown in description
+- `test_render_json_with_markdown_simple`: Verifies basic JSON rendering
+- `test_render_json_with_markdown_nested`: Verifies nested structures
+- `test_render_json_with_markdown_types`: Verifies type preservation
+
+---
 
 ### A.2 Metadata Subsection
 
@@ -188,42 +257,6 @@ Per AGENTS.md:
 - `.metadata-item` - row
 - `.metadata-label` - label
 - `.metadata-value` - value
-
----
-
-### A.3 Cell Subsections (Input/Output Split)
-
-**Status:** Not Started
-**Priority:** High
-**Dependencies:** A.2
-
-**Implementation Details:**
-- Split messages into collapsible subsections
-- Use native `<details>` elements
-
-**Structure:**
-```html
-<div class="message assistant">
-  <details class="cell thinking-cell">
-    <summary>Thinking</summary>
-    <div class="cell-content">...</div>
-  </details>
-
-  <details class="cell response-cell" open>
-    <summary>Response</summary>
-    <div class="cell-content">...</div>
-  </details>
-
-  <details class="cell tools-cell">
-    <summary>Tool Calls (3)</summary>
-    <div class="cell-content">...</div>
-  </details>
-</div>
-```
-
-**Files to Modify:**
-- `render_assistant_message()` in `__init__.py`
-- `macros.html`: Add cell macros
 
 ---
 

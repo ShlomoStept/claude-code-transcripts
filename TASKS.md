@@ -169,7 +169,7 @@ Per AGENTS.md:
 | A.3 Cell Subsections | 9.0/10 | Completed |
 | A.4 Per-Cell Copy Buttons | 7.5/10 | Completed |
 | B.6 Tool Markdown Rendering | 8.5/10 | Completed |
-| A.2 Metadata Subsection | - | Not Started |
+| A.2 Metadata Subsection | 8.5/10 | Completed |
 | B.3 Tool Call Headers | - | Not Started |
 
 ---
@@ -269,30 +269,42 @@ Per AGENTS.md:
 
 ### A.2 Metadata Subsection
 
-**Status:** Not Started
+**Status:** Completed (Score: 8.5/10)
 **Priority:** High
 **Dependencies:** None
 
-**Implementation Details:**
-- Add collapsible metadata section to each message
-- Use `<details>` tag with `.message-metadata` class
+**Implementation:**
+- `calculate_message_metadata()` function computes char count, token estimate, and tool counts
+- `metadata` macro in macros.html renders collapsible `<details>` section
+- `message` macro updated to accept optional `metadata_html` parameter
+- `render_message()` and `render_message_with_tool_pairs()` updated to generate metadata
 
-**Data to Include:**
-- Timestamp (from message object)
-- Working directory (from session context)
-- Character count: `len(message_text)`
-- Token estimate: `len(message_text) // 4`
-- Tool call counts (use existing counting logic)
-
-**Files to Modify:**
-- `src/claude_code_transcripts/__init__.py`: Add `render_metadata()` function
-- `src/claude_code_transcripts/templates/macros.html`: Add metadata macro
+**Features:**
+- Collapsible metadata section below message header (closed by default)
+- Info icon (i) indicator in summary
+- Character count display
+- Token estimate (~chars/4)
+- Tool call counts per tool type
 
 **CSS Classes:**
-- `.message-metadata` - container
-- `.metadata-item` - row
-- `.metadata-label` - label
-- `.metadata-value` - value
+- `.message-metadata` - details container
+- `.metadata-content` - flex container for items
+- `.metadata-item` - label/value pair
+- `.metadata-label` - muted label text
+- `.metadata-value` - monospace value text
+
+**Test Coverage:**
+- `test_calculate_metadata_string_content`: Verifies string content calculation
+- `test_calculate_metadata_text_blocks`: Verifies text block calculation
+- `test_calculate_metadata_thinking_blocks`: Verifies thinking content included
+- `test_calculate_metadata_tool_counts`: Verifies tool counting
+- `test_calculate_metadata_empty_content`: Verifies empty content handling
+- `test_metadata_in_rendered_message`: Verifies metadata HTML in output
+- `test_metadata_css_present`: Verifies CSS classes defined
+
+**Known Limitations:**
+- Working directory not currently included (would require session context)
+- Timestamp already shown in message header, not duplicated in metadata
 
 ---
 

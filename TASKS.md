@@ -167,6 +167,7 @@ Per AGENTS.md:
 | Task | Score | Status |
 |------|-------|--------|
 | A.3 Cell Subsections | 9.0/10 | Completed |
+| A.4 Per-Cell Copy Buttons | 7.5/10 | Completed |
 | B.6 Tool Markdown Rendering | 8.5/10 | Completed |
 | A.2 Metadata Subsection | - | Not Started |
 | B.3 Tool Call Headers | - | Not Started |
@@ -201,6 +202,41 @@ Per AGENTS.md:
 - `test_tools_cell_shows_count`: Verifies tool count display
 - `test_cell_has_copy_button`: Verifies copy button presence
 - `test_cell_copy_button_aria_label`: Verifies accessibility
+
+---
+
+### A.4 Per-Cell Copy Buttons
+
+**Status:** Completed (Score: 7.5/10)
+**Priority:** High
+**Dependencies:** A.3
+
+**Implementation:**
+- Copy button added to each cell header in `cell` macro (macros.html)
+- CSS for `.cell-copy-btn` with hover, focus, and copied states
+- JavaScript handler using Clipboard API (`navigator.clipboard.writeText`)
+- Keyboard accessibility (Enter/Space key support)
+- ARIA labels for screen readers ("Copy Thinking", "Copy Response", "Copy Tool Calls")
+
+**Features:**
+- Visual feedback: button text changes to "Copied!" for 2 seconds
+- Color feedback: green background on success
+- Focus styling: outline for keyboard navigation
+- Contextual labels based on cell type
+
+**Known Limitations:**
+- No user-facing error notification (errors only logged to console)
+- No fallback for browsers without Clipboard API
+- Limited functional test coverage
+
+**Test Coverage:**
+- `test_cell_has_copy_button`: Verifies button HTML presence
+- `test_cell_copy_button_aria_label`: Verifies accessibility labels
+
+**What would improve the score:**
+- Add user-facing error notifications
+- Add fallback copy method for older browsers
+- Add functional tests for click/keyboard behavior
 
 ---
 

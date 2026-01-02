@@ -160,70 +160,151 @@ Per AGENTS.md:
 
 ---
 
-## Phase 2: Structure (PENDING)
+## Phase 2: Structure (PARTIALLY COMPLETED)
 
-### A.2 Metadata Subsection
+### Task Grading Summary - Phase 2
 
-**Status:** Not Started
-**Priority:** High
-**Dependencies:** None
-
-**Implementation Details:**
-- Add collapsible metadata section to each message
-- Use `<details>` tag with `.message-metadata` class
-
-**Data to Include:**
-- Timestamp (from message object)
-- Working directory (from session context)
-- Character count: `len(message_text)`
-- Token estimate: `len(message_text) // 4`
-- Tool call counts (use existing counting logic)
-
-**Files to Modify:**
-- `src/claude_code_transcripts/__init__.py`: Add `render_metadata()` function
-- `src/claude_code_transcripts/templates/macros.html`: Add metadata macro
-
-**CSS Classes:**
-- `.message-metadata` - container
-- `.metadata-item` - row
-- `.metadata-label` - label
-- `.metadata-value` - value
+| Task | Score | Status |
+|------|-------|--------|
+| A.3 Cell Subsections | 9.0/10 | Completed |
+| A.4 Per-Cell Copy Buttons | 7.5/10 | Completed |
+| B.6 Tool Markdown Rendering | 8.5/10 | Completed |
+| A.2 Metadata Subsection | 8.5/10 | Completed |
+| B.3 Tool Call Headers | - | Not Started |
 
 ---
 
 ### A.3 Cell Subsections (Input/Output Split)
 
-**Status:** Not Started
+**Status:** Completed (Score: 9.0/10)
 **Priority:** High
-**Dependencies:** A.2
+**Dependencies:** None
 
-**Implementation Details:**
-- Split messages into collapsible subsections
-- Use native `<details>` elements
+**Implementation:**
+- `group_blocks_by_type()` function groups content blocks into thinking/text/tools
+- `render_assistant_message()` and `render_assistant_message_with_tool_pairs()` create cell structure
+- `cell` macro in macros.html creates collapsible `<details>` wrapper
+- CSS for `.cell`, `.thinking-cell`, `.response-cell`, `.tools-cell`
+- Per-cell copy buttons with keyboard accessibility and ARIA labels
 
-**Structure:**
-```html
-<div class="message assistant">
-  <details class="cell thinking-cell">
-    <summary>Thinking</summary>
-    <div class="cell-content">...</div>
-  </details>
+**Features:**
+- Thinking cell: closed by default
+- Response cell: open by default
+- Tools cell: closed by default, shows count
+- Expand/collapse indicator (▶ rotates on open)
+- Copy button per cell with "Copied!" feedback
 
-  <details class="cell response-cell" open>
-    <summary>Response</summary>
-    <div class="cell-content">...</div>
-  </details>
+**Test Coverage:**
+- `test_group_blocks_by_type`: Verifies block grouping
+- `test_cell_structure_in_assistant_message`: Verifies cell HTML structure
+- `test_thinking_cell_closed_by_default`: Verifies default state
+- `test_response_cell_open_by_default`: Verifies default state
+- `test_tools_cell_shows_count`: Verifies tool count display
+- `test_cell_has_copy_button`: Verifies copy button presence
+- `test_cell_copy_button_aria_label`: Verifies accessibility
 
-  <details class="cell tools-cell">
-    <summary>Tool Calls (3)</summary>
-    <div class="cell-content">...</div>
-  </details>
-</div>
-```
+---
 
-**Files to Modify:**
-- `render_assistant_message()` in `__init__.py`
-- `macros.html`: Add cell macros
+### A.4 Per-Cell Copy Buttons
+
+**Status:** Completed (Score: 7.5/10)
+**Priority:** High
+**Dependencies:** A.3
+
+**Implementation:**
+- Copy button added to each cell header in `cell` macro (macros.html)
+- CSS for `.cell-copy-btn` with hover, focus, and copied states
+- JavaScript handler using Clipboard API (`navigator.clipboard.writeText`)
+- Keyboard accessibility (Enter/Space key support)
+- ARIA labels for screen readers ("Copy Thinking", "Copy Response", "Copy Tool Calls")
+
+**Features:**
+- Visual feedback: button text changes to "Copied!" for 2 seconds
+- Color feedback: green background on success
+- Focus styling: outline for keyboard navigation
+- Contextual labels based on cell type
+
+**Known Limitations:**
+- No user-facing error notification (errors only logged to console)
+- No fallback for browsers without Clipboard API
+- Limited functional test coverage
+
+**Test Coverage:**
+- `test_cell_has_copy_button`: Verifies button HTML presence
+- `test_cell_copy_button_aria_label`: Verifies accessibility labels
+
+**What would improve the score:**
+- Add user-facing error notifications
+- Add fallback copy method for older browsers
+- Add functional tests for click/keyboard behavior
+
+---
+
+### B.6 Tool Markdown Rendering
+
+**Status:** Completed (Score: 8.5/10)
+**Priority:** High
+**Dependencies:** None
+
+**Implementation:**
+- `render_json_with_markdown()` function renders JSON with Markdown in string values
+- `render_bash_tool()` renders description as Markdown HTML
+- Generic tool handler renders description as Markdown HTML
+- Updated macros use `|safe` filter for pre-rendered HTML
+- CSS classes for styled JSON: `.json-key`, `.json-string-value`, `.json-number`, etc.
+
+**Features:**
+- Tool descriptions render as Markdown (bold, italic, links, code)
+- JSON string values render inline Markdown
+- Syntax-highlighted JSON keys and types
+- Preserves JSON structure visually
+
+**Test Coverage:**
+- `test_render_bash_tool_markdown_description`: Verifies Markdown in description
+- `test_render_json_with_markdown_simple`: Verifies basic JSON rendering
+- `test_render_json_with_markdown_nested`: Verifies nested structures
+- `test_render_json_with_markdown_types`: Verifies type preservation
+
+---
+
+### A.2 Metadata Subsection
+
+**Status:** Completed (Score: 8.5/10)
+**Priority:** High
+**Dependencies:** None
+
+**Implementation:**
+- `calculate_message_metadata()` function computes char count, token estimate, and tool counts
+- `metadata` macro in macros.html renders collapsible `<details>` section
+- `message` macro updated to accept optional `metadata_html` parameter
+- `render_message()` and `render_message_with_tool_pairs()` updated to generate metadata
+
+**Features:**
+- Collapsible metadata section below message header (closed by default)
+- Info icon (i) indicator in summary
+- Character count display
+- Token estimate (~chars/4)
+- Tool call counts per tool type
+
+**CSS Classes:**
+- `.message-metadata` - details container
+- `.metadata-content` - flex container for items
+- `.metadata-item` - label/value pair
+- `.metadata-label` - muted label text
+- `.metadata-value` - monospace value text
+
+**Test Coverage:**
+- `test_calculate_metadata_string_content`: Verifies string content calculation
+- `test_calculate_metadata_text_blocks`: Verifies text block calculation
+- `test_calculate_metadata_thinking_blocks`: Verifies thinking content included
+- `test_calculate_metadata_tool_counts`: Verifies tool counting
+- `test_calculate_metadata_empty_content`: Verifies empty content handling
+- `test_metadata_in_rendered_message`: Verifies metadata HTML in output
+- `test_metadata_css_present`: Verifies CSS classes defined
+
+**Known Limitations:**
+- Working directory not currently included (would require session context)
+- Timestamp already shown in message header, not duplicated in metadata
 
 ---
 

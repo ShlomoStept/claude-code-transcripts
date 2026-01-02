@@ -23,6 +23,16 @@ Condensed reference document with:
 - Module boundaries (current and proposed)
 - Key findings and next steps
 
+### 🔍 [SCHEMA_ANALYSIS_REPORT.md](./SCHEMA_ANALYSIS_REPORT.md)
+**Schema Consolidation | Developer Response Analysis**
+
+Comprehensive schema analysis from Claude Code artifact investigation:
+- Cross-comparison of 5 developer responses
+- Final de-duplicated list of 19 unique object types
+- Conflicts identified and resolved with existing documentation
+- Flow and functionality validation
+- Recommendations for schema formalization and sub-agent support
+
 ### 🎨 [ARCHITECTURE_DIAGRAMS.md](./ARCHITECTURE_DIAGRAMS.md)
 **Visual Documentation | Flow Charts**
 
@@ -73,9 +83,12 @@ Detailed plan for implementing the proposed architecture changes.
 - **Current Codebase:** 2,994 lines in single file
 - **Content Block Types:** 5 (text, thinking, tool_use, tool_result, image)
 - **Tool Renderers:** 4 specialized + 1 generic
+- **Tool Input Types:** 9 documented (Write, Edit, Bash, TodoWrite, Task, TaskOutput, Read, Glob, Grep)
+- **Entry Types:** 4 (user, assistant, queue-operation, file-history-snapshot)
 - **Session Formats:** 2 (JSON, JSONL)
 - **CLI Commands:** 4 (local, web, json, all)
 - **Proposed Modules:** 8 core modules
+- **Total Unique Types:** 19 (documented in SCHEMA_ANALYSIS_REPORT.md)
 
 ## Analysis Highlights
 
@@ -105,15 +118,16 @@ Detailed plan for implementing the proposed architecture changes.
 
 ⚠️ **Areas for Improvement:**
 - Monolithic structure (2,994 lines in one file)
-- No formal schema definitions
-- No sub-agent support
+- Schema validation not implemented
+- Sub-agent discovery disabled (format is supported)
 - Limited caching
 
 🎯 **Recommended Actions:**
 1. Extract utilities (low risk, high value)
-2. Add session validation
+2. Add session validation with Pydantic models
 3. Implement summary caching
-4. Begin module separation
+4. Enable optional sub-agent file discovery
+5. Add specialized Task tool renderer
 
 ## Contributing
 
@@ -157,6 +171,13 @@ These documents were generated through comprehensive code analysis on 2026-01-01
 4. Update statistics and line numbers
 
 **Version History:**
+- v1.1 (2026-01-02) - Schema consolidation update
+  - Added SCHEMA_ANALYSIS_REPORT.md with complete schema definitions
+  - Updated LogLine schema with uuid, parentUuid, sessionId, agentId fields
+  - Added signature field to ThinkingBlock
+  - Added Task, TaskOutput, Read, Glob, Grep tool schemas
+  - Corrected sub-agent support documentation (format supported, discovery disabled)
+  - Expanded entry types to include queue-operation and file-history-snapshot
 - v1.0 (2026-01-01) - Initial comprehensive analysis
   - Full core flows documentation
   - Complete schema specification

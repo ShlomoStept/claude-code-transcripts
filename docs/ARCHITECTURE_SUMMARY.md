@@ -48,32 +48,68 @@
 **Session (Normalized):**
 ```typescript
 {
-    loglines: [
-        {
-            type: "user" | "assistant",
-            timestamp: string,  // ISO 8601
-            message: {
-                role: string,
-                content: string | ContentBlock[]
-            },
-            isCompactSummary?: boolean
-        }
-    ]
+    loglines: SessionLogEntry[]
+}
+
+interface SessionLogEntry {
+    // Core Identifiers
+    uuid: string;                // Unique event identifier
+    parentUuid: string | null;   // Linked-list parent pointer for ordering
+    sessionId: string;           // Conversation/session grouping ID
+    
+    // Entry Type (expanded from user/assistant)
+    type: "user" | "assistant" | "queue-operation" | "file-history-snapshot";
+    
+    timestamp: string;           // ISO 8601
+    
+    // Context Fields (optional)
+    cwd?: string;                // Current working directory
+    gitBranch?: string;          // Active git branch
+    userType?: "external";       // User type indicator
+    isSidechain?: boolean;       // Parallel/sidechain conversation flag
+    agentId?: string;            // Sub-agent identifier (e.g., "a85b54c")
+    slug?: string;               // Human-readable session identifier
+    
+    // Message Payload (for user/assistant types)
+    message?: {
+        role: "user" | "assistant";
+        content: ContentBlock[];
+        model?: string;          // e.g., "claude-opus-4-5-20251101"
+        id?: string;             // Message-specific ID
+    };
+    
+    // Snapshot Payload (for file-history-snapshot type)
+    snapshot?: {
+        messageId: string;
+        trackedFileBackups: Record<string, any>;
+        timestamp: string;
+    };
+    
+    // Queue Payload (for queue-operation type)
+    operation?: "enqueue" | "remove";
+    content?: string;            // Queue item content
+    
+    isCompactSummary?: boolean;  // Session continuation indicator
 }
 ```
 
 **Content Blocks:**
-- `text` - Markdown text
-- `thinking` - Internal reasoning
-- `tool_use` - Tool invocation
-- `tool_result` - Tool output
-- `image` - Base64 image
+- `text`: `{ type: "text", text: string }` - Markdown text
+- `thinking`: `{ type: "thinking", thinking: string, signature: string }` - Internal reasoning with verification signature
+- `tool_use`: `{ type: "tool_use", id: string, name: string, input: object }` - Tool invocation
+- `tool_result`: `{ type: "tool_result", tool_use_id: string, content: string | ContentBlock[], is_error?: boolean }` - Tool output
+- `image`: `{ type: "image", source: { type: "base64", media_type: string, data: string } }` - Base64 image
 
-**Tool Inputs:**
-- `Write`: `{file_path, content}`
-- `Edit`: `{file_path, old_string, new_string, replace_all?}`
-- `Bash`: `{command, description?}`
-- `TodoWrite`: `{todos: [{content, status, activeForm?}]}`
+**Tool Inputs (Complete List):**
+- `Write`: `{ file_path: string, content: string }`
+- `Edit`: `{ file_path: string, old_string: string, new_string: string, replace_all?: boolean }`
+- `Bash`: `{ command: string, description?: string }`
+- `TodoWrite`: `{ todos: [{ content: string, status: "pending" | "in_progress" | "completed", activeForm?: string }] }`
+- `Task` (Sub-Agent): `{ subagent_type: string, prompt: string, description: string, resume?: string, model?: string, run_in_background?: boolean }`
+- `TaskOutput`: `{ task_id: string, block: boolean, timeout: number }`
+- `Read`: `{ file_path: string, offset?: number, limit?: number }`
+- `Glob`: `{ pattern: string, path?: string }`
+- `Grep`: `{ pattern: string, path: string, output_mode?: string, "-n"?: boolean }`
 
 ### Module Boundaries (Current Monolith)
 
@@ -96,6 +132,8 @@ assets/       - CSS/JS
 - **Lines of Code:** 2994 (single file)
 - **Content Block Types:** 5 (text, thinking, tool_use, tool_result, image)
 - **Tool Renderers:** 4 specialized (Write, Edit, Bash, TodoWrite) + 1 generic
+- **Tool Input Types:** 9 documented (Write, Edit, Bash, TodoWrite, Task, TaskOutput, Read, Glob, Grep)
+- **Entry Types:** 4 (user, assistant, queue-operation, file-history-snapshot)
 - **Session Formats:** 2 (JSON, JSONL)
 - **CLI Commands:** 4 (local, web, json, all)
 
@@ -103,9 +141,9 @@ assets/       - CSS/JS
 
 ## Key Findings
 
-1. **No Sub-Agent Support:** Current code explicitly excludes agent files
-2. **Schemas Implicit:** No formal definitions, inferred from code
-3. **Tool Pairing Works:** Reliable ID-based system
+1. **Sub-Agent Format Supported:** Artifacts include `agentId` field and `Task` tool for sub-agent tracking. Discovery code excludes `agent-*` files from listing, but the format fully supports sub-agents.
+2. **Schemas Now Documented:** Complete specifications including SessionLogEntry, Content Blocks, and 9 Tool Input types (see [SCHEMA_ANALYSIS_REPORT.md](./SCHEMA_ANALYSIS_REPORT.md))
+3. **Tool Pairing Works:** Reliable ID-based system (`tool_use.id` ↔ `tool_result.tool_use_id`)
 4. **Componentization Needed:** Monolithic structure limits maintainability
 
 ## Next Steps

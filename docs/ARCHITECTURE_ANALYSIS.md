@@ -392,21 +392,29 @@ Generate HTML Files
 
 ## 2. Connecting the Main Agent to Sub-Agent Activity
 
-### 2.1 Current State: No Sub-Agent Tracking
+### 2.1 Current State: Sub-Agent Format Supported, Discovery Disabled
 
-**Important Finding:** The current codebase does **not** have explicit sub-agent tracking or hierarchical agent relationships.
+> **Update (2026-01-02):** Analysis of Claude Code artifacts reveals that sub-agent fields exist in the format. See [SCHEMA_ANALYSIS_REPORT.md](./SCHEMA_ANALYSIS_REPORT.md) for complete details.
 
-**Evidence:**
-1. Session filtering explicitly excludes agent files:
-   ```python
-   # Line 359 in find_local_sessions()
-   if f.name.startswith("agent-"):
-       continue
-   ```
+**Finding:** The artifact format **does support** sub-agent tracking via:
+- `agentId` field in session entries
+- `Task` tool for sub-agent invocation
+- `TaskOutput` tool for sub-agent result retrieval
+- `resume` parameter for resuming sub-agent context
 
-2. No agent ID or parent-child relationships in message schemas
+**Current Limitation:**
+The discovery code excludes agent files from listing:
+```python
+# Line 359 in find_local_sessions()
+if f.name.startswith("agent-"):
+    continue
+```
 
-3. All messages treated as single-agent conversation
+**To Enable Sub-Agent Support:**
+1. Add `--include-agents` flag to discovery functions
+2. Parse `agentId` field from session entries
+3. Link conversations via `parentUuid` relationship
+4. Add specialized renderer for `Task` tool
 
 ### 2.2 Tool Call and Tool Response Linking
 
@@ -624,12 +632,30 @@ interface NormalizedJSONLSession {
 
 ### 3.3 LogLine Schema
 
+> **Note:** The complete, all-inclusive schema has been documented in [SCHEMA_ANALYSIS_REPORT.md](./SCHEMA_ANALYSIS_REPORT.md). The schema below represents the normalized parsing output, while the full artifact format includes additional fields.
+
 ```typescript
 interface LogLine {
-    type: "user" | "assistant";
+    // Core Identifiers (from raw artifacts)
+    uuid?: string;                // Unique event identifier
+    parentUuid?: string | null;   // Linked-list parent pointer
+    sessionId?: string;           // Session grouping ID
+    
+    // Entry Type (expanded)
+    type: "user" | "assistant" | "queue-operation" | "file-history-snapshot";
+    
     timestamp: string;  // ISO 8601 format, e.g., "2025-12-24T10:00:00.000Z"
     message: Message;
-    isCompactSummary?: boolean;  // Optional, indicates session continuation
+    
+    // Context Fields (optional)
+    cwd?: string;                 // Current working directory
+    gitBranch?: string;           // Active git branch
+    userType?: "external";        // User type indicator
+    isSidechain?: boolean;        // Parallel conversation flag
+    agentId?: string;             // Sub-agent identifier
+    slug?: string;                // Human-readable session ID
+    
+    isCompactSummary?: boolean;   // Session continuation indicator
 }
 ```
 
@@ -639,8 +665,11 @@ interface LogLine {
 
 **Field Details:**
 
-- **`type`**: Role of the message sender
-  - Values: `"user"` | `"assistant"`
+- **`type`**: Entry type
+  - Values: `"user"` | `"assistant"` | `"queue-operation"` | `"file-history-snapshot"`
+  - `user`/`assistant`: Standard message entries
+  - `queue-operation`: Background task queue operations
+  - `file-history-snapshot`: File backup state at message time
   - Determines rendering style and icon
 
 - **`timestamp`**: When the message was created
@@ -649,6 +678,11 @@ interface LogLine {
   - Example: `"2025-12-24T10:00:00.000Z"`
 
 - **`message`**: The actual message content (see Message schema)
+
+- **`agentId`**: Sub-agent identifier
+  - Type: string (optional)
+  - Present when message is from a sub-agent
+  - Can be used to link sub-agent sessions
 
 - **`isCompactSummary`**: Indicates session continuation/resume
   - Type: boolean (optional)
@@ -729,7 +763,8 @@ interface TextBlock extends BaseContentBlock {
 ```typescript
 interface ThinkingBlock extends BaseContentBlock {
     type: "thinking";
-    thinking: string;  // Markdown-formatted internal reasoning
+    thinking: string;    // Markdown-formatted internal reasoning
+    signature: string;   // Cryptographic verification signature
 }
 ```
 
@@ -737,13 +772,16 @@ interface ThinkingBlock extends BaseContentBlock {
 ```json
 {
     "type": "thinking",
-    "thinking": "The user wants a simple addition function. I should:\n1. Create the function\n2. Add a basic test"
+    "thinking": "The user wants a simple addition function. I should:\n1. Create the function\n2. Add a basic test",
+    "signature": "abc123..."
 }
 ```
 
 **Rendering:** Lines 946-948  
 **Renderer:** `_macros.thinking(content_html)`  
 **Styling:** Closed by default, yellow background
+
+> **Note:** The `signature` field was discovered during artifact analysis (see [SCHEMA_ANALYSIS_REPORT.md](./SCHEMA_ANALYSIS_REPORT.md)).
 
 ---
 
@@ -982,7 +1020,91 @@ interface TodoItem {
 
 ---
 
-#### 3.6.5 Generic Tool Input
+#### 3.6.5 Task Tool Input (Sub-Agent Invocation)
+
+> **Added (2026-01-02):** Documented based on artifact analysis. See [SCHEMA_ANALYSIS_REPORT.md](./SCHEMA_ANALYSIS_REPORT.md).
+
+```typescript
+interface TaskToolInput {
+    subagent_type: string;          // e.g., "Explore", "Plan", "general-purpose", "structured-engineering-agent"
+    prompt: string;                 // Detailed instructions for the sub-agent
+    description: string;            // Short human-readable summary
+    resume?: string;                // Optional agentId to resume existing context
+    model?: string;                 // Optional model override (e.g., "opus")
+    run_in_background?: boolean;    // Whether to run asynchronously
+}
+```
+
+**Known `subagent_type` Values:**
+- `"general-purpose"` - General task execution
+- `"Explore"` - Code/file exploration
+- `"Plan"` - Planning and strategy
+- `"structured-engineering-agent"` - Complex engineering tasks
+
+**Example:**
+```json
+{
+    "subagent_type": "Explore",
+    "prompt": "Find all Python files that contain database queries",
+    "description": "Finding database-related code",
+    "run_in_background": true
+}
+```
+
+**Rendering:** Currently uses generic tool renderer  
+**Recommendation:** Add specialized renderer with sub-agent type highlighting
+
+---
+
+#### 3.6.6 TaskOutput Tool Input
+
+```typescript
+interface TaskOutputToolInput {
+    task_id: string;    // ID of the Task to get output from
+    block: boolean;     // Whether to block waiting for output
+    timeout: number;    // Timeout in seconds
+}
+```
+
+---
+
+#### 3.6.7 Read Tool Input
+
+```typescript
+interface ReadToolInput {
+    file_path: string;   // Path to file to read
+    offset?: number;     // Starting line number
+    limit?: number;      // Number of lines to read
+}
+```
+
+---
+
+#### 3.6.8 Glob Tool Input
+
+```typescript
+interface GlobToolInput {
+    pattern: string;  // Glob pattern (e.g., "**/*.py")
+    path?: string;    // Base directory path
+}
+```
+
+---
+
+#### 3.6.9 Grep Tool Input
+
+```typescript
+interface GrepToolInput {
+    pattern: string;       // Search pattern (regex)
+    path: string;          // Directory or file to search
+    output_mode?: string;  // Output format mode
+    "-n"?: boolean;        // Show line numbers
+}
+```
+
+---
+
+#### 3.6.10 Generic Tool Input
 ```typescript
 interface GenericToolInput {
     description?: string;  // Optional description field
@@ -991,14 +1113,10 @@ interface GenericToolInput {
 ```
 
 **Used For:** Tools without specialized renderers:
-- Glob
-- Grep  
-- Read
 - WebFetch
 - WebSearch
 - Agent
 - Skill
-- Task
 
 **Rendering:** Lines 964-977  
 **Features:**

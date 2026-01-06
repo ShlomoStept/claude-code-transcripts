@@ -153,6 +153,39 @@
 <div class="truncatable"><div class="truncatable-content"><div class="view-markdown tool-input-rendered">{{ input_markdown_html|safe }}</div><div class="view-json tool-input-rendered">{{ input_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
 {%- endmacro %}
 
+{# Subagent tool (Task/Agent) - shows subagent metadata badge #}
+{% macro subagent_tool(tool_name, tool_icon, description_html, input_markdown_html, input_json_html, tool_id, subagent_info) %}
+<div class="tool-use subagent-tool" data-tool-id="{{ tool_id }}">
+<div class="tool-header">
+<span class="tool-call-label"><span class="call-icon">→</span> Call</span>
+<span class="tool-icon">{{ tool_icon }}</span> {{ tool_name }}
+{%- if subagent_info %}
+<span class="subagent-badge" title="Spawns a subagent">
+<span class="subagent-badge-icon">⚡</span>
+<span class="subagent-badge-type">{{ subagent_info.subagent_type }}</span>
+{%- if subagent_info.is_resume %}
+<span class="subagent-badge-resume">(resume)</span>
+{%- endif %}
+</span>
+{%- endif %}
+<div class="view-toggle" role="tablist">
+<button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button>
+<button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button>
+</div>
+</div>
+{%- if description_html -%}
+<div class="tool-description">{{ description_html|safe }}</div>
+{%- endif -%}
+{%- if subagent_info and subagent_info.prompt_preview %}
+<div class="subagent-prompt-preview">
+<div class="subagent-prompt-label">Subagent Prompt:</div>
+<div class="subagent-prompt-text">{{ subagent_info.prompt_preview }}</div>
+</div>
+{%- endif -%}
+<div class="truncatable"><div class="truncatable-content"><div class="view-markdown tool-input-rendered">{{ input_markdown_html|safe }}</div><div class="view-json tool-input-rendered">{{ input_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div>
+</div>
+{%- endmacro %}
+
 {# Tool result - content_markdown_html and content_json_html are pre-rendered so need |safe #}
 {% macro tool_result(content_markdown_html, content_json_html, is_error) %}
 {%- set error_class = ' tool-error' if is_error else '' -%}

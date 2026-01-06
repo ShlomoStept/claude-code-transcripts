@@ -322,6 +322,15 @@ details.continuation[open] summary { border-radius: var(--border-radius-lg) var(
 .metadata-item { display: flex; align-items: center; gap: var(--spacing-xs); }
 .metadata-label { color: var(--text-muted); font-weight: 500; }
 .metadata-value { color: var(--text-secondary); font-family: monospace; }
+/* Subagent tool styles */
+.subagent-tool { border-left: 3px solid #8b5cf6; }
+.subagent-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; margin-left: 8px; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); border-radius: 12px; font-size: var(--font-size-xs); color: white; font-weight: 500; }
+.subagent-badge-icon { font-size: 10px; }
+.subagent-badge-type { text-transform: capitalize; }
+.subagent-badge-resume { font-size: 10px; opacity: 0.8; }
+.subagent-prompt-preview { margin: var(--spacing-sm) 0; padding: var(--spacing-sm) var(--spacing-md); background: rgba(139, 92, 246, 0.08); border-radius: var(--border-radius-sm); border-left: 2px solid #8b5cf6; }
+.subagent-prompt-label { font-size: var(--font-size-xs); color: #8b5cf6; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.subagent-prompt-text { font-size: var(--font-size-sm); color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 600px) { body { padding: var(--spacing-sm); } .message, .index-item { border-radius: var(--border-radius-md); } .message-content, .index-item-content { padding: var(--spacing-md); } pre { font-size: var(--font-size-xs); padding: var(--spacing-sm); } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
 </style>
 </head>

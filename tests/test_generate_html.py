@@ -32,6 +32,12 @@ from claude_code_transcripts import (
     get_session_summary,
     find_local_sessions,
     calculate_message_metadata,
+    # Subagent detection functions
+    is_subagent_tool,
+    extract_subagent_info,
+    extract_agent_id_from_result,
+    find_related_agent_sessions,
+    render_subagent_tool,
 )
 
 
@@ -1943,3 +1949,208 @@ class TestCopyButtonFeature:
             or "chevron" in page_html.lower()
             or "expand" in page_html.lower()
         )
+
+
+class TestSubagentDetection:
+    """Tests for subagent detection functionality."""
+
+    def test_is_subagent_tool_task(self):
+        """Test that Task tool is detected as subagent tool."""
+        from claude_code_transcripts import is_subagent_tool
+
+        assert is_subagent_tool("Task") is True
+
+    def test_is_subagent_tool_agent(self):
+        """Test that Agent tool is detected as subagent tool."""
+        from claude_code_transcripts import is_subagent_tool
+
+        assert is_subagent_tool("Agent") is True
+
+    def test_is_subagent_tool_other_tools(self):
+        """Test that other tools are not detected as subagent tools."""
+        from claude_code_transcripts import is_subagent_tool
+
+        assert is_subagent_tool("Bash") is False
+        assert is_subagent_tool("Read") is False
+        assert is_subagent_tool("Write") is False
+        assert is_subagent_tool("Grep") is False
+        assert is_subagent_tool("TodoWrite") is False
+
+    def test_extract_subagent_info_with_type(self):
+        """Test extracting subagent info when subagent_type is present."""
+        from claude_code_transcripts import extract_subagent_info
+
+        tool_input = {
+            "subagent_type": "Explore",
+            "description": "Explore the codebase",
+            "prompt": "Find all Python files",
+        }
+        result = extract_subagent_info(tool_input)
+
+        assert result is not None
+        assert result["subagent_type"] == "Explore"
+        assert result["description"] == "Explore the codebase"
+        assert result["prompt_preview"] == "Find all Python files"
+        assert result["is_resume"] is False
+
+    def test_extract_subagent_info_with_resume(self):
+        """Test extracting subagent info when resume agent ID is present."""
+        from claude_code_transcripts import extract_subagent_info
+
+        tool_input = {
+            "subagent_type": "Plan",
+            "resume": "agent-12345",
+            "prompt": "Continue work",
+        }
+        result = extract_subagent_info(tool_input)
+
+        assert result is not None
+        assert result["is_resume"] is True
+        assert result["agent_id"] == "agent-12345"
+
+    def test_extract_subagent_info_truncates_long_prompt(self):
+        """Test that long prompts are truncated."""
+        from claude_code_transcripts import extract_subagent_info
+
+        long_prompt = "x" * 300
+        tool_input = {
+            "subagent_type": "code-reviewer",
+            "prompt": long_prompt,
+        }
+        result = extract_subagent_info(tool_input)
+
+        assert result is not None
+        assert len(result["prompt_preview"]) <= 203  # 200 + "..."
+        assert result["prompt_preview"].endswith("...")
+
+    def test_extract_subagent_info_returns_none_for_empty_input(self):
+        """Test that empty input returns None."""
+        from claude_code_transcripts import extract_subagent_info
+
+        assert extract_subagent_info({}) is None
+        assert extract_subagent_info(None) is None
+        assert extract_subagent_info("string") is None
+
+    def test_extract_agent_id_from_string_result(self):
+        """Test extracting agent ID from string tool result."""
+        from claude_code_transcripts import extract_agent_id_from_result
+
+        result_content = "Started agent with ID: abc123def456"
+        agent_id = extract_agent_id_from_result(result_content)
+        assert agent_id == "abc123def456"
+
+    def test_extract_agent_id_from_dict_result(self):
+        """Test extracting agent ID from dict tool result."""
+        from claude_code_transcripts import extract_agent_id_from_result
+
+        result_content = {"agentId": "my-agent-id-789"}
+        agent_id = extract_agent_id_from_result(result_content)
+        assert agent_id == "my-agent-id-789"
+
+    def test_extract_agent_id_returns_none_when_not_found(self):
+        """Test that None is returned when no agent ID is found."""
+        from claude_code_transcripts import extract_agent_id_from_result
+
+        assert extract_agent_id_from_result("No agent ID here") is None
+        assert extract_agent_id_from_result({}) is None
+        assert extract_agent_id_from_result(None) is None
+
+    def test_render_subagent_tool_has_badge(self):
+        """Test that subagent tool rendering includes the badge."""
+        from claude_code_transcripts import render_subagent_tool
+
+        tool_input = {
+            "subagent_type": "Explore",
+            "description": "Explore the code",
+            "prompt": "Find main.py",
+        }
+        result = render_subagent_tool("Task", tool_input, "tool-123")
+
+        assert "subagent-tool" in result
+        assert "subagent-badge" in result
+        assert "Explore" in result
+
+    def test_render_subagent_tool_shows_resume_indicator(self):
+        """Test that resume subagents are indicated."""
+        from claude_code_transcripts import render_subagent_tool
+
+        tool_input = {
+            "subagent_type": "Plan",
+            "resume": "existing-agent-id",
+            "prompt": "Continue",
+        }
+        result = render_subagent_tool("Task", tool_input, "tool-456")
+
+        assert "(resume)" in result
+
+    def test_render_subagent_tool_shows_prompt_preview(self):
+        """Test that prompt preview is shown."""
+        from claude_code_transcripts import render_subagent_tool
+
+        tool_input = {
+            "subagent_type": "code-reviewer",
+            "prompt": "Review the PR for security issues",
+        }
+        result = render_subagent_tool("Task", tool_input, "tool-789")
+
+        assert "subagent-prompt-preview" in result
+        assert "Review the PR for security issues" in result
+
+    def test_render_content_block_uses_subagent_renderer(self):
+        """Test that tool_use blocks for Task/Agent use subagent renderer."""
+        from claude_code_transcripts import render_content_block
+
+        block = {
+            "type": "tool_use",
+            "id": "tool-abc",
+            "name": "Task",
+            "input": {
+                "subagent_type": "Explore",
+                "description": "Find files",
+                "prompt": "List all Python files",
+            },
+        }
+        result = render_content_block(block)
+
+        assert "subagent-tool" in result
+        assert "subagent-badge" in result
+        assert "Explore" in result
+
+    def test_subagent_css_present_in_output(self, output_dir):
+        """Test that subagent CSS styles are present in generated HTML."""
+        fixture_path = Path(__file__).parent / "sample_session.json"
+        generate_html(fixture_path, output_dir, github_repo="example/project")
+
+        index_html = (output_dir / "index.html").read_text(encoding="utf-8")
+
+        # Subagent CSS classes should be present
+        assert ".subagent-tool" in index_html
+        assert ".subagent-badge" in index_html
+        assert ".subagent-prompt-preview" in index_html
+
+    def test_find_related_agent_sessions(self, tmp_path):
+        """Test finding related agent session files."""
+        from claude_code_transcripts import find_related_agent_sessions
+
+        # Create main session and some agent files
+        main_session = tmp_path / "session.jsonl"
+        main_session.write_text('{"type":"user"}\n')
+
+        agent1 = tmp_path / "agent-2025-01-01T10:00:00.000Z.jsonl"
+        agent1.write_text(
+            '{"type":"summary","summary":"Agent 1"}\n'
+            '{"type":"user","timestamp":"2025-01-01T10:00:00Z","message":{"role":"user","content":"Task"}}\n'
+        )
+
+        agent2 = tmp_path / "agent-2025-01-01T11:00:00.000Z.jsonl"
+        agent2.write_text(
+            '{"type":"summary","summary":"Agent 2"}\n'
+            '{"type":"user","timestamp":"2025-01-01T11:00:00Z","message":{"role":"user","content":"Task"}}\n'
+        )
+
+        related = find_related_agent_sessions(main_session)
+
+        assert len(related) == 2
+        # Should be sorted by timestamp, oldest first
+        assert "Agent 1" in related[0]["summary"]
+        assert "Agent 2" in related[1]["summary"]

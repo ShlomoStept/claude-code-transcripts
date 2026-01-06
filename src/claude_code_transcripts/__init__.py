@@ -310,6 +310,122 @@ def set_github_repo(repo: str | None) -> contextvars.Token[str | None]:
 API_BASE_URL = "https://api.anthropic.com/v1"
 ANTHROPIC_VERSION = "2023-06-01"
 
+# Regex to extract timestamp from agent filenames (agent-{timestamp}.jsonl)
+# Timestamps can include: digits, colons, dots, Z (UTC), +/- (timezone offset)
+AGENT_FILE_PATTERN = re.compile(r"agent-(\d{4}-\d{2}-\d{2}T[\d:.Z+-]+)\.jsonl")
+
+
+def is_subagent_tool(tool_name):
+    """Check if a tool name represents a subagent spawning tool.
+
+    Args:
+        tool_name: The name of the tool.
+
+    Returns:
+        True if the tool spawns a subagent (Task, Agent).
+    """
+    return tool_name in ("Task", "Agent")
+
+
+def extract_subagent_info(tool_input):
+    """Extract subagent metadata from a Task or Agent tool input.
+
+    Args:
+        tool_input: The tool's input dict.
+
+    Returns:
+        Dict with subagent_type, description, prompt (truncated), and agent_id if available.
+        Returns None if no subagent info can be extracted.
+    """
+    if not isinstance(tool_input, dict):
+        return None
+
+    subagent_type = tool_input.get("subagent_type", "")
+    description = tool_input.get("description", "")
+    prompt = tool_input.get("prompt", "")
+    resume_agent_id = tool_input.get("resume", "")
+
+    # For Task tool, extract key info
+    if subagent_type or description or prompt:
+        return {
+            "subagent_type": subagent_type or "Unknown",
+            "description": description,
+            "prompt_preview": prompt[:200] + "..." if len(prompt) > 200 else prompt,
+            "agent_id": resume_agent_id,
+            "is_resume": bool(resume_agent_id),
+        }
+
+    return None
+
+
+def extract_agent_id_from_result(tool_result_content):
+    """Extract agent ID from a Task/Agent tool result.
+
+    The result often contains text like "Started agent with ID: abc123"
+    or returns a structured response with an agent ID.
+
+    Args:
+        tool_result_content: The tool result content (string or dict).
+
+    Returns:
+        Agent ID string if found, None otherwise.
+    """
+    if isinstance(tool_result_content, str):
+        # Look for common patterns - agent IDs typically look like UUIDs or
+        # have formats like "agent-{timestamp}" with alphanumeric characters
+        patterns = [
+            # "agent ID: abc123def456" or "Agent ID: abc-123-def"
+            r"agent\s+ID[:\s]+([a-zA-Z0-9_-]{8,})",
+            # "agentId": "abc123" in JSON-like output
+            r'agentId["\']?\s*[:\s]\s*["\']?([a-zA-Z0-9_-]{8,})',
+            # "agent_id": "abc123"
+            r'agent_id["\']?\s*[:\s]\s*["\']?([a-zA-Z0-9_-]{8,})',
+            # "Started agent abc123def456789012"
+            r"Started\s+agent\s+(?:with\s+ID[:\s]+)?([a-zA-Z0-9_-]{10,})",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, tool_result_content, re.IGNORECASE)
+            if match:
+                return match.group(1)
+    elif isinstance(tool_result_content, dict):
+        return tool_result_content.get("agentId") or tool_result_content.get("agent_id")
+    return None
+
+
+def find_related_agent_sessions(main_session_path):
+    """Find subagent JSONL files related to a main session.
+
+    Subagent files follow the pattern: agent-{timestamp}.jsonl
+    They exist in the same directory as the main session.
+
+    Args:
+        main_session_path: Path to the main session file.
+
+    Returns:
+        List of dicts with keys: path, timestamp, summary, filename.
+        Sorted by timestamp (oldest first).
+    """
+    session_dir = Path(main_session_path).parent
+    agent_files = list(session_dir.glob("agent-*.jsonl"))
+
+    related = []
+    for agent_file in agent_files:
+        match = AGENT_FILE_PATTERN.match(agent_file.name)
+        if match:
+            timestamp = match.group(1)
+            summary = get_session_summary(agent_file, max_length=100)
+            related.append(
+                {
+                    "path": agent_file,
+                    "timestamp": timestamp,
+                    "summary": summary,
+                    "filename": agent_file.name,
+                }
+            )
+
+    # Sort by timestamp
+    return sorted(related, key=lambda x: x["timestamp"])
+
 
 def get_session_summary(filepath, max_length=200):
     """Extract a human-readable summary from a session file.
@@ -976,6 +1092,41 @@ def render_bash_tool(tool_input, tool_id):
     return _macros.bash_tool(command, description_html, input_json_html, tool_id)
 
 
+def render_subagent_tool(tool_name, tool_input, tool_id):
+    """Render Task or Agent tool calls with subagent metadata visualization.
+
+    Args:
+        tool_name: "Task" or "Agent"
+        tool_input: The tool's input dict containing subagent_type, description, prompt, etc.
+        tool_id: The tool call ID.
+
+    Returns:
+        HTML string with subagent visualization.
+    """
+    # Extract subagent info
+    subagent_info = extract_subagent_info(tool_input)
+
+    # Get basic tool info
+    description = tool_input.get("description", "")
+    description_html = render_markdown_text(description) if description else ""
+
+    # Build display input (excluding description for cleaner display)
+    display_input = {k: v for k, v in tool_input.items() if k != "description"}
+    input_markdown_html = render_json_with_markdown(display_input)
+    input_json_html = format_json(display_input)
+    tool_icon = get_tool_icon(tool_name)
+
+    return _macros.subagent_tool(
+        tool_name,
+        tool_icon,
+        description_html,
+        input_markdown_html,
+        input_json_html,
+        tool_id,
+        subagent_info,
+    )
+
+
 def render_content_block(block):
     if not isinstance(block, dict):
         return f"<p>{html.escape(str(block))}</p>"
@@ -1003,6 +1154,9 @@ def render_content_block(block):
             return render_edit_tool(tool_input, tool_id)
         if tool_name == "Bash":
             return render_bash_tool(tool_input, tool_id)
+        # Special handling for subagent tools (Task, Agent)
+        if is_subagent_tool(tool_name):
+            return render_subagent_tool(tool_name, tool_input, tool_id)
         description = tool_input.get("description", "")
         description_html = render_markdown_text(description) if description else ""
         display_input = {k: v for k, v in tool_input.items() if k != "description"}
@@ -1797,6 +1951,15 @@ details.continuation[open] summary { border-radius: var(--border-radius-lg) var(
 .metadata-item { display: flex; align-items: center; gap: var(--spacing-xs); }
 .metadata-label { color: var(--text-muted); font-weight: 500; }
 .metadata-value { color: var(--text-secondary); font-family: monospace; }
+/* Subagent tool styles */
+.subagent-tool { border-left: 3px solid #8b5cf6; }
+.subagent-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; margin-left: 8px; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); border-radius: 12px; font-size: var(--font-size-xs); color: white; font-weight: 500; }
+.subagent-badge-icon { font-size: 10px; }
+.subagent-badge-type { text-transform: capitalize; }
+.subagent-badge-resume { font-size: 10px; opacity: 0.8; }
+.subagent-prompt-preview { margin: var(--spacing-sm) 0; padding: var(--spacing-sm) var(--spacing-md); background: rgba(139, 92, 246, 0.08); border-radius: var(--border-radius-sm); border-left: 2px solid #8b5cf6; }
+.subagent-prompt-label { font-size: var(--font-size-xs); color: #8b5cf6; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.subagent-prompt-text { font-size: var(--font-size-sm); color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 600px) { body { padding: var(--spacing-sm); } .message, .index-item { border-radius: var(--border-radius-md); } .message-content, .index-item-content { padding: var(--spacing-md); } pre { font-size: var(--font-size-xs); padding: var(--spacing-sm); } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
 """
 

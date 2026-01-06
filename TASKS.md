@@ -160,7 +160,7 @@ Per AGENTS.md:
 
 ---
 
-## Phase 2: Structure (PARTIALLY COMPLETED)
+## Phase 2: Structure (COMPLETED)
 
 ### Task Grading Summary - Phase 2
 
@@ -170,7 +170,7 @@ Per AGENTS.md:
 | A.4 Per-Cell Copy Buttons | 7.5/10 | Completed |
 | B.6 Tool Markdown Rendering | 8.5/10 | Completed |
 | A.2 Metadata Subsection | 8.5/10 | Completed |
-| B.3 Tool Call Headers | - | Not Started |
+| B.3 Tool Call Headers | 8.5/10 | Completed |
 
 ---
 
@@ -310,18 +310,29 @@ Per AGENTS.md:
 
 ### B.3 Tool Call Headers with Type
 
-**Status:** Not Started
+**Status:** Completed (Score: 8.5/10)
 **Priority:** High
 **Dependencies:** None
 
-**Implementation Details:**
-- Enhanced tool headers showing tool type icon and name
-- Add input/output toggle capability
-- Add parsed/raw view toggle
+**Implementation:**
+- `TOOL_ICONS` dict at __init__.py:57-77 with 14 tool-specific icons
+- `get_tool_icon()` function returns icon for tool name
+- Tool macros display icons in headers
+- Markdown/JSON view toggle implemented in all tool macros
+- Cell-level "All Markdown/All JSON" toggle for bulk switching
 
-**Files to Modify:**
-- Tool macros in `macros.html`
-- CSS for toggle buttons
+**Features:**
+- Tool-specific icons: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch, TodoWrite, Task, Skill, Agent, NotebookEdit
+- Default icon for unknown tools
+- Tab-style view toggle with active state highlighting
+- ARIA labels for accessibility
+
+**Files Modified:**
+- `src/claude_code_transcripts/__init__.py` (TOOL_ICONS dict, get_tool_icon function)
+- `src/claude_code_transcripts/templates/macros.html` (tool macros with icons and toggles)
+
+**Known Limitations:**
+- View-toggle pattern duplicated 8 times (documented for future refactoring)
 
 ---
 

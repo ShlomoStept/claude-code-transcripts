@@ -92,3 +92,51 @@
 ### Phase 5: Delivery ✅ COMPLETED
 - All commits made
 - PR created with detailed summary
+
+---
+
+## Updated Grading After Technical Debt Fixes
+
+### Fixes Applied
+1. **Duplicate test method**: Fixed by renaming to unique name
+2. **Global variable thread-safety**: Refactored to use contextvars
+3. **Clipboard API fallback**: Added fallback for older browsers
+4. **View-toggle duplication**: Documented for Phase 3 (not fixed)
+
+### Updated Per-File Grades
+
+#### 1. macros.html (Templates) - No Changes
+| Category | Score | Notes |
+|----------|-------|-------|
+| Weighted Score | 85.20 | View-toggle duplication deferred to Phase 3 |
+
+#### 2. __init__.py (Core) - Improved
+| Category | Old Score | New Score | Notes |
+|----------|-----------|-----------|-------|
+| Correctness | 78 | 85 | Thread-safety fixed, clipboard fallback added |
+| **Weighted Score** | **77.70** | **80.50** | +2.8 points |
+
+#### 3. Test Files - Improved
+| Category | Old Score | New Score | Notes |
+|----------|-----------|-----------|-------|
+| Correctness | 82 | 90 | Duplicate test method fixed |
+| **Weighted Score** | **84.35** | **87.15** | +2.8 points |
+
+### Updated Overall Project Score
+
+| Component | Weight | Old Score | New Score | Contribution |
+|-----------|--------|-----------|-----------|--------------|
+| Templates (macros.html) | 30% | 85.20 | 85.20 | 25.56 |
+| Core (__init__.py) | 50% | 77.70 | 80.50 | 40.25 |
+| Tests | 20% | 84.35 | 87.15 | 17.43 |
+| **OVERALL** | **100%** | **81.28** | **83.24** | **+1.96** |
+
+### Remaining Issues
+1. **Medium**: CSS/JS embedded as strings (Phase 3: externalization)
+2. **Medium**: View-toggle pattern duplicated 8x (Phase 3: refactoring)
+3. **Low**: ~200 lines duplicated in generate_html functions (Phase 3: module split)
+
+### Phase 3 Planning
+- Created `feature/phase3-planning` branch
+- Added `PHASE3_PLAN.md` with detailed implementation roadmap
+- Priority order: C.1 Subagent Detection, A.4 Recursive Nesting, Module Split, CSS/JS Externalization

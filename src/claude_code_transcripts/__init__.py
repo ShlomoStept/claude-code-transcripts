@@ -979,8 +979,8 @@ def render_markdown_text(text):
     return markdown.markdown(text, extensions=["fenced_code", "tables"])
 
 
-def render_json_with_markdown(obj, indent=0):
-    """Render a JSON object/dict with string values as Markdown.
+def _render_json_with_markdown_inner(obj, indent=0):
+    """Internal recursive function for render_json_with_markdown.
 
     Recursively traverses the object and renders string values as Markdown HTML.
     Non-string values (numbers, booleans, null) are rendered as-is.
@@ -995,7 +995,7 @@ def render_json_with_markdown(obj, indent=0):
         items = list(obj.items())
         for i, (key, value) in enumerate(items):
             comma = "," if i < len(items) - 1 else ""
-            rendered_value = render_json_with_markdown(value, indent + 1)
+            rendered_value = _render_json_with_markdown_inner(value, indent + 1)
             lines.append(
                 f'{next_indent}<span class="json-key">"{html.escape(str(key))}"</span>: {rendered_value}{comma}'
             )
@@ -1007,7 +1007,7 @@ def render_json_with_markdown(obj, indent=0):
         lines = ["["]
         for i, item in enumerate(obj):
             comma = "," if i < len(obj) - 1 else ""
-            rendered_item = render_json_with_markdown(item, indent + 1)
+            rendered_item = _render_json_with_markdown_inner(item, indent + 1)
             lines.append(f"{next_indent}{rendered_item}{comma}")
         lines.append(f"{indent_str}]")
         return "\n".join(lines)
@@ -1034,6 +1034,16 @@ def render_json_with_markdown(obj, indent=0):
         return f'<span class="json-number">{obj}</span>'
     else:
         return f'<span class="json-value">{html.escape(str(obj))}</span>'
+
+
+def render_json_with_markdown(obj, indent=0):
+    """Render a JSON object/dict with string values as Markdown, wrapped in a pre tag.
+
+    Returns HTML with the JSON rendered with markdown formatting in string values,
+    wrapped in a styled pre tag for proper code block appearance.
+    """
+    inner_html = _render_json_with_markdown_inner(obj, indent)
+    return f'<pre class="json-markdown">{inner_html}</pre>'
 
 
 def is_json_like(text):
@@ -1372,7 +1382,7 @@ def render_assistant_message_with_tool_pairs(
                     tool_use_html = render_content_block(block)
                     tool_result_html = render_content_block(tool_result)
                     tool_parts.append(
-                        _macros.tool_pair(tool_use_html, tool_result_html)
+                        _macros.tool_pair(tool_use_html, tool_result_html, tool_name)
                     )
                     # Add raw content for tool use and result
                     raw_tool_parts.append(
@@ -1803,8 +1813,15 @@ time { color: var(--text-muted); font-size: 0.8rem; }
 .json-null { color: var(--text-muted); font-style: italic; }
 .tool-result { background: var(--tool-result-bg); border-radius: var(--border-radius-md); padding: var(--spacing-md); margin: var(--spacing-md) 0; }
 .tool-result.tool-error { background: var(--tool-error-bg); }
-.tool-pair { border: 1px solid var(--tool-border); border-radius: var(--border-radius-md); padding: var(--spacing-sm); margin: var(--spacing-md) 0; background: var(--accent-purple-bg); }
-.tool-pair .tool-use, .tool-pair .tool-result { margin: var(--spacing-sm) 0; }
+.tool-pair-collapsible { border: 1px solid var(--tool-border); border-radius: var(--border-radius-md); margin: var(--spacing-md) 0; background: var(--accent-purple-bg); }
+.tool-pair-summary { cursor: pointer; padding: var(--spacing-sm) var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-sm); font-weight: 600; font-size: var(--font-size-sm); color: var(--accent-purple); list-style: none; border-radius: var(--border-radius-md); transition: background var(--transition-fast); }
+.tool-pair-summary::-webkit-details-marker { display: none; }
+.tool-pair-summary:hover { background: rgba(124, 58, 237, 0.08); }
+.tool-pair-toggle-icon::before { content: ''; display: inline-block; width: 0; height: 0; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent var(--accent-purple); transition: transform var(--transition-fast); }
+.tool-pair-collapsible[open] .tool-pair-toggle-icon::before { transform: rotate(90deg); }
+.tool-pair-label { flex: 1; }
+.tool-pair-content { padding: var(--spacing-sm); }
+.tool-pair-content .tool-use, .tool-pair-content .tool-result { margin: var(--spacing-sm) 0; }
 .file-tool { border-radius: var(--border-radius-md); padding: var(--spacing-md); margin: var(--spacing-md) 0; }
 .write-tool { background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid var(--accent-green); }
 .edit-tool { background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(239, 68, 68, 0.05) 100%); border: 1px solid var(--accent-orange); }
@@ -1841,6 +1858,7 @@ time { color: var(--text-muted); font-size: 0.8rem; }
 .todo-pending .todo-content { color: var(--text-secondary); }
 pre { background: var(--code-bg); color: var(--code-text); padding: var(--spacing-md); border-radius: var(--border-radius-sm); overflow-x: auto; font-size: var(--font-size-sm); line-height: 1.5; margin: var(--spacing-sm) 0; white-space: pre-wrap; word-wrap: break-word; }
 pre.json { color: #e0e0e0; }
+pre.json-markdown { color: #e0e0e0; }
 pre.highlight { color: #e0e0e0; }
 code { background: var(--border-light); padding: 2px var(--spacing-sm); border-radius: var(--border-radius-sm); font-size: 0.9em; }
 pre code { background: none; padding: 0; }

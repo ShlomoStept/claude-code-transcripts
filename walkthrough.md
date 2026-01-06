@@ -1,84 +1,126 @@
-# Technical Debt Fixes - Walkthrough
+# Markdown/JSON Rendering Fixes - Walkthrough
 
 ## Summary of Changes
 
-This document summarizes the technical debt fixes implemented on the `fix/technical-debt` branch.
+This document details the fixes implemented on `fix/markdown-rendering-issues` branch to resolve tool call rendering issues in the claude-code-transcripts project.
 
 ---
 
-## Changes Made
+## Issues Fixed
 
-### 1. Duplicate Test Method Fix
+### 1. Content Duplication Fix (Issue 2.1)
 
-**File**: `tests/test_generate_html.py`
+**Files**:
+- `src/claude_code_transcripts/templates/macros.html`
 
-**Issue**: Two methods named `test_tool_result_with_ansi_codes` existed in `TestRenderContentBlock` class. The second one (line 545) silently overrode the first (line 512).
+**Problem**: Markdown content was displayed alongside JSON content simultaneously. Both views were nested inside the same `truncatable-content` div, causing CSS display conflicts.
 
-**Fix**: Renamed second test to `test_tool_result_with_ansi_codes_snapshot` to clarify its purpose as a snapshot companion test.
-
-**Verification**:
+**Root Cause**: The HTML structure placed both `view-markdown` and `view-json` divs inside a single truncatable wrapper:
+```html
+<!-- Before: Both views in same truncatable -->
+<div class="truncatable"><div class="truncatable-content">
+  <div class="view-markdown">...</div>
+  <div class="view-json">...</div>
+</div></div>
 ```
-$ uv run pytest -k "ansi" -v
-5 tests passed (including both ANSI tests now running)
+
+**Fix**: Restructured to give each view its own independent truncatable wrapper:
+```html
+<!-- After: Each view has own truncatable -->
+<div class="view-markdown"><div class="truncatable">...</div></div>
+<div class="view-json"><div class="truncatable">...</div></div>
 ```
+
+**Macros Updated**:
+- `tool_use` (line 147-157)
+- `subagent_tool` (line 159-191)
+- `tool_result` (line 193-201)
 
 ---
 
-### 2. Thread-Safe GitHub Repo Variable
+### 2. Hidden/Non-Scrollable Content Fix (Issue 2.2)
+
+**Problem**: Long content was hidden and not scrollable due to truncatable wrapper containing both views.
+
+**Fix**: With each view having its own truncatable, height calculations now work correctly per view. The "Show more" button functions independently for each view.
+
+---
+
+### 3. JSON Code Block in Markdown Mode (Issue 2.3)
 
 **Files**:
 - `src/claude_code_transcripts/__init__.py`
+
+**Problem**: JSON was not wrapped in a code block when viewing in Markdown mode. The `render_json_with_markdown()` function returned raw styled text without a `<pre>` wrapper.
+
+**Fix**:
+1. Renamed internal function to `_render_json_with_markdown_inner()`
+2. Created wrapper `render_json_with_markdown()` that wraps output in `<pre class="json-markdown">`
+3. Added CSS styling for `.json-markdown` class to match `.json` styling
+
+**Code Change**:
+```python
+def render_json_with_markdown(obj, indent=0):
+    inner_html = _render_json_with_markdown_inner(obj, indent)
+    return f'<pre class="json-markdown">{inner_html}</pre>'
+```
+
+---
+
+### 4. Tool Result Mode Differentiation (Issue 2.4)
+
+**Problem**: Switching between Markdown and JSON modes produced no visual difference for tool results.
+
+**Fix**: With the structural changes (separate truncatable wrappers) and the JSON code block wrapping, both views now display distinct content:
+- Markdown view: Rendered content (prose, formatted text)
+- JSON view: Raw JSON in dark code block
+
+---
+
+### 5. Collapsible Tool Sections (Issue 2.5)
+
+**Files**:
+- `src/claude_code_transcripts/templates/macros.html`
+- `src/claude_code_transcripts/__init__.py`
 - `tests/test_generate_html.py`
 
-**Issue**: Global `_github_repo` variable posed thread-safety risk when processing multiple sessions concurrently.
+**Problem**: Tool call and tool result sections were not collapsible.
 
 **Fix**:
-- Added `contextvars` import
-- Created `_github_repo_var` ContextVar with None default
-- Added `get_github_repo()` accessor (thread-safe)
-- Added `set_github_repo()` setter (thread-safe)
-- Kept `_github_repo` module variable for backward compatibility
-- Updated all internal usages to use new functions
-- Updated test to use new API
+1. Converted `tool_pair` macro to use `<details>` element
+2. Added `tool_name` parameter to display in summary
+3. Added CSS styling for collapsible appearance with toggle icon
+4. Updated Python code to pass tool name to macro
+5. Updated test to check for new `tool-pair-collapsible` class
 
-**Verification**:
+**New HTML Structure**:
+```html
+<details class="tool-pair-collapsible" open>
+  <summary class="tool-pair-summary">
+    <span class="tool-pair-toggle-icon"></span>
+    <span class="tool-pair-label">ToolName</span>
+  </summary>
+  <div class="tool-pair-content">...</div>
+</details>
 ```
-$ uv run pytest -k "commit or github" -v
-3 tests passed (including test_github_repo_autodetect)
-```
+
+**CSS Added**:
+- `.tool-pair-collapsible` - Container styling
+- `.tool-pair-summary` - Clickable header with flex layout
+- `.tool-pair-toggle-icon::before` - CSS triangle that rotates
+- `.tool-pair-content` - Content padding
 
 ---
 
-### 3. Clipboard API Fallback
+### 6. Subagent Content Truncation (Issue 1 - Investigation)
 
-**File**: `src/claude_code_transcripts/__init__.py` (JS constant)
+**Finding**: The reported truncation is working as intended.
 
-**Issue**: Copy buttons relied on modern Clipboard API without fallback for older browsers.
-
-**Fix**:
-- Added `copyToClipboard()` helper function
-- Uses `navigator.clipboard.writeText` when available
-- Falls back to `document.execCommand('copy')` for older browsers
-- Returns Promise for consistent handling
-- Added user-facing error feedback ("Failed" button text)
-
-**Verification**:
-```
-$ uv run pytest --snapshot-update
-4 snapshots updated (JS changes reflected)
-All 141 tests pass
-```
-
----
-
-### 4. TASKS.md Updates
-
-**File**: `TASKS.md`
-
-**Changes**:
-- Updated Phase 2 status from "PARTIALLY COMPLETED" to "COMPLETED"
-- Added B.3 Tool Call Headers score (8.5/10) to grading summary
-- Documented B.3 implementation details
+**Details**:
+- `extract_subagent_info()` creates a `prompt_preview` limited to 200 characters
+- This is displayed in the `.subagent-prompt-preview` section
+- The **full content** is available in both Markdown and JSON views via `display_input`
+- No fix needed - this is a preview feature, not a bug
 
 ---
 
@@ -87,64 +129,95 @@ All 141 tests pass
 ### Test Suite
 ```
 $ uv run pytest
-141 passed in 0.78s
+157 passed in 0.85s
 21 snapshots passed
 ```
 
 ### Code Formatting
 ```
-$ uv run black . --check
-4 files would be left unchanged
+$ uv run black .
+4 files left unchanged
 ```
 
-### Commits Made
-1. `b2f1836` - Fix duplicate test method by renaming to unique name
-2. `e9a5aa0` - Refactor _github_repo to thread-safe contextvars
-3. `6aa26b7` - Add Clipboard API fallback for older browsers
-4. `ae2e815` - Mark Phase 2 as complete, update B.3 status in TASKS.md
+### Behavioral Changes Verified
+- View toggle now shows only one view at a time
+- Long content properly truncates and expands per view
+- JSON displayed in code block in both modes
+- Tool pairs are collapsible with visual toggle
+
+---
+
+## Files Changed
+
+| File | Changes |
+|------|---------|
+| `src/claude_code_transcripts/templates/macros.html` | Restructured 3 macros, updated tool_pair macro |
+| `src/claude_code_transcripts/__init__.py` | Added json-markdown wrapper, CSS for collapsible tool pairs |
+| `tests/test_generate_html.py` | Updated test for new class name |
+| `tests/__snapshots__/*.ambr` | 11 snapshots updated |
 
 ---
 
 ## Impact Assessment
 
 ### Performance
-- No performance impact from contextvars (negligible overhead)
-- Clipboard fallback only triggered on older browsers
+- No measurable performance impact
+- Slightly more HTML output (separate truncatable wrappers)
 
 ### Security
-- Thread-safety improvement reduces risk of data corruption
-- No new security concerns introduced
+- No security implications
+- No new external dependencies
 
 ### Maintainability
-- Code is now thread-safe for potential concurrent usage
-- Tests are clearer with unique method names
-- TASKS.md accurately reflects completion status
+- Clearer separation of view content
+- Collapsible sections improve UX for long transcripts
+- Code structure follows existing patterns
 
 ---
 
-## Issues Not Addressed
+## Grading Report
 
-### View-Toggle Pattern Duplication
-**Reason**: Risk of output changes outweighed benefit. Documented in PHASE3_PLAN.md for future refactoring.
+### Overall Score: 88.50/100
 
-### Module Splitting
-**Reason**: Large refactoring effort, documented as Phase 3 work.
+### Category Scores
 
----
+| Category | Weight | Score | Weighted |
+|----------|--------|-------|----------|
+| Task Completeness | 25% | 95/100 | 23.75 |
+| Correctness & Bug Risk | 25% | 90/100 | 22.50 |
+| Maintainability & Clarity | 20% | 85/100 | 17.00 |
+| Documentation & Comments | 10% | 85/100 | 8.50 |
+| Redundancy & Complexity | 10% | 80/100 | 8.00 |
+| Test Coverage & Validation | 10% | 87.5/100 | 8.75 |
 
-## Related Branches
+### Per-File Grades
 
-| Branch | Purpose |
-|--------|---------|
-| `fix/phase2-ui-regressions` | Phase 2 features (PR #6 open) |
-| `fix/technical-debt` | Technical debt fixes (this branch) |
-| `feature/phase3-planning` | Phase 3 planning documentation |
+**macros.html (90/100)**
+- Excellent structural fix for view separation
+- Clean use of details/summary for collapsible sections
+- Minor: Could extract view-toggle to shared macro (future work)
+
+**__init__.py (88/100)**
+- Good refactoring of render_json_with_markdown
+- Proper CSS additions for new features
+- Minor: CSS in Python string makes it harder to maintain
+
+**test_generate_html.py (85/100)**
+- Test updated to reflect structural change
+- Could add more specific tests for new collapsible behavior
+
+### Deductions
+- -5: No dedicated test for collapsible tool pairs
+- -3.5: CSS embedded in Python string rather than external file
+- -3: Could add visual regression tests
+
+### Bonuses
+None claimed
 
 ---
 
 ## Next Steps
 
-1. Merge `fix/technical-debt` into `fix/phase2-ui-regressions`
-2. Update PR #6 with technical debt fixes
-3. Merge to main when ready
-4. Begin Phase 3 implementation based on PHASE3_PLAN.md
+1. Commit changes with descriptive message
+2. Consider adding dedicated tests for collapsible sections
+3. Consider extracting CSS to external file (documented in PHASE3_PLAN.md)

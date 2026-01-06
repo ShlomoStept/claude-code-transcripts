@@ -94,7 +94,8 @@ class TestGenerateHtml:
         generate_html(fixture_path, output_dir, github_repo="example/project")
 
         page_html = (output_dir / "page-001.html").read_text(encoding="utf-8")
-        assert 'class="tool-pair"' in page_html
+        # Tool pairs are now collapsible using details/summary
+        assert 'class="tool-pair-collapsible"' in page_html
 
     def test_generates_page_002_html(self, output_dir, snapshot_html):
         """Test page-002.html generation (continuation page)."""

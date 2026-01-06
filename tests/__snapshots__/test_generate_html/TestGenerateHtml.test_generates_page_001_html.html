@@ -174,8 +174,15 @@ time { color: var(--text-muted); font-size: 0.8rem; }
 .json-null { color: var(--text-muted); font-style: italic; }
 .tool-result { background: var(--tool-result-bg); border-radius: var(--border-radius-md); padding: var(--spacing-md); margin: var(--spacing-md) 0; }
 .tool-result.tool-error { background: var(--tool-error-bg); }
-.tool-pair { border: 1px solid var(--tool-border); border-radius: var(--border-radius-md); padding: var(--spacing-sm); margin: var(--spacing-md) 0; background: var(--accent-purple-bg); }
-.tool-pair .tool-use, .tool-pair .tool-result { margin: var(--spacing-sm) 0; }
+.tool-pair-collapsible { border: 1px solid var(--tool-border); border-radius: var(--border-radius-md); margin: var(--spacing-md) 0; background: var(--accent-purple-bg); }
+.tool-pair-summary { cursor: pointer; padding: var(--spacing-sm) var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-sm); font-weight: 600; font-size: var(--font-size-sm); color: var(--accent-purple); list-style: none; border-radius: var(--border-radius-md); transition: background var(--transition-fast); }
+.tool-pair-summary::-webkit-details-marker { display: none; }
+.tool-pair-summary:hover { background: rgba(124, 58, 237, 0.08); }
+.tool-pair-toggle-icon::before { content: ''; display: inline-block; width: 0; height: 0; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent var(--accent-purple); transition: transform var(--transition-fast); }
+.tool-pair-collapsible[open] .tool-pair-toggle-icon::before { transform: rotate(90deg); }
+.tool-pair-label { flex: 1; }
+.tool-pair-content { padding: var(--spacing-sm); }
+.tool-pair-content .tool-use, .tool-pair-content .tool-result { margin: var(--spacing-sm) 0; }
 .file-tool { border-radius: var(--border-radius-md); padding: var(--spacing-md); margin: var(--spacing-md) 0; }
 .write-tool { background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid var(--accent-green); }
 .edit-tool { background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(239, 68, 68, 0.05) 100%); border: 1px solid var(--accent-orange); }
@@ -212,6 +219,7 @@ time { color: var(--text-muted); font-size: 0.8rem; }
 .todo-pending .todo-content { color: var(--text-secondary); }
 pre { background: var(--code-bg); color: var(--code-text); padding: var(--spacing-md); border-radius: var(--border-radius-sm); overflow-x: auto; font-size: var(--font-size-sm); line-height: 1.5; margin: var(--spacing-sm) 0; white-space: pre-wrap; word-wrap: break-word; }
 pre.json { color: #e0e0e0; }
+pre.json-markdown { color: #e0e0e0; }
 pre.highlight { color: #e0e0e0; }
 code { background: var(--border-light); padding: 2px var(--spacing-sm); border-radius: var(--border-radius-sm); font-size: 0.9em; }
 pre code { background: none; padding: 0; }
@@ -417,7 +425,9 @@ Result:
 File written successfully">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair"><div class="file-tool write-tool" data-tool-id="toolu_write_001">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Write</span></summary>
+<div class="tool-pair-content"><div class="file-tool write-tool" data-tool-id="toolu_write_001">
 <div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">math_utils.py</span>
 <div class="view-toggle" role="tablist">
 <button class="view-toggle-tab active" role="tab" data-view="markdown">Markdown</button>
@@ -437,7 +447,12 @@ File written successfully">Copy</button>
   &quot;content&quot;: &quot;def add(a: int, b: int) -&gt; int:\n    \&quot;\&quot;\&quot;Add two numbers together.\&quot;\&quot;\&quot;\n    return a + b\n&quot;
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>File written successfully</p></div><div class="view-json"><pre>File written successfully</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>File written successfully</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>File written successfully</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-00-15-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-00-15-000Z" class="timestamp-link"><time datetime="2025-12-24T10:00:15.000Z" data-timestamp="2025-12-24T10:00:15.000Z">2025-12-24T10:00:15.000Z</time></a></div>
 <details class="message-metadata">
@@ -481,7 +496,9 @@ tests/test_math.py ..  [100%]
 ===== 2 passed in 0.05s =====">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Bash</span></summary>
+<div class="tool-pair-content">
 <div class="tool-use bash-tool" data-tool-id="toolu_bash_001">
 <div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">$</span> Bash
 <div class="view-toggle" role="tablist">
@@ -498,15 +515,20 @@ tests/test_math.py ..  [100%]
   &quot;description&quot;: &quot;Run pytest on tests directory&quot;
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>===== test session starts =====
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>===== test session starts =====
 collected 2 items</p>
 <p>tests/test_math.py ..  [100%]</p>
-<p>===== 2 passed in 0.05s =====</p></div><div class="view-json"><pre>===== test session starts =====
+<p>===== 2 passed in 0.05s =====</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>===== test session starts =====
 collected 2 items
 
 tests/test_math.py ..  [100%]
 
-===== 2 passed in 0.05s =====</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+===== 2 passed in 0.05s =====</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-00-25-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-00-25-000Z" class="timestamp-link"><time datetime="2025-12-24T10:00:25.000Z" data-timestamp="2025-12-24T10:00:25.000Z">2025-12-24T10:00:25.000Z</time></a></div>
 <details class="message-metadata">
@@ -570,7 +592,9 @@ Result:
 Todos updated">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">TodoWrite</span></summary>
+<div class="tool-pair-content">
 <div class="todo-list" data-tool-id="toolu_todo_001">
 <div class="todo-header"><span class="todo-header-icon">☰</span> Task List
 <div class="view-toggle" role="tablist">
@@ -612,7 +636,12 @@ Todos updated">Copy</button>
   ]
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>Todos updated</p></div><div class="view-json"><pre>Todos updated</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>Todos updated</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>Todos updated</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-00-35-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-00-35-000Z" class="timestamp-link"><time datetime="2025-12-24T10:00:35.000Z" data-timestamp="2025-12-24T10:00:35.000Z">2025-12-24T10:00:35.000Z</time></a></div>
 <details class="message-metadata">
@@ -643,7 +672,9 @@ Result:
  1 file changed, 5 insertions(+)">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Bash</span></summary>
+<div class="tool-pair-content">
 <div class="tool-use bash-tool" data-tool-id="toolu_bash_002">
 <div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">$</span> Bash
 <div class="view-toggle" role="tablist">
@@ -660,8 +691,13 @@ Result:
   &quot;description&quot;: &quot;Commit changes&quot;
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><div class="commit-card"><a href="https://github.com/example/project/commit/abc1234"><span class="commit-card-hash">abc1234</span> Add math_utils with add function</a></div><pre>1 file changed, 5 insertions(+)</pre></div><div class="view-json"><pre>[main abc1234] Add math_utils with add function
- 1 file changed, 5 insertions(+)</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><div class="commit-card"><a href="https://github.com/example/project/commit/abc1234"><span class="commit-card-hash">abc1234</span> Add math_utils with add function</a></div><pre>1 file changed, 5 insertions(+)</pre></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>[main abc1234] Add math_utils with add function
+ 1 file changed, 5 insertions(+)</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-00-45-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-00-45-000Z" class="timestamp-link"><time datetime="2025-12-24T10:00:45.000Z" data-timestamp="2025-12-24T10:00:45.000Z">2025-12-24T10:00:45.000Z</time></a></div>
 <details class="message-metadata">
@@ -705,7 +741,9 @@ To github.com:example/project.git
    def5678..abc1234  main -&gt; main">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Bash</span></summary>
+<div class="tool-pair-content">
 <div class="tool-use bash-tool" data-tool-id="toolu_bash_003">
 <div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">$</span> Bash
 <div class="view-toggle" role="tablist">
@@ -722,17 +760,22 @@ To github.com:example/project.git
   &quot;description&quot;: &quot;Push to remote&quot;
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>remote: 
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>remote: 
 remote: Create a pull request for 'main' on GitHub by visiting:
 remote:      https://github.com/example/project/pull/new/main
 remote: 
 To github.com:example/project.git
-   def5678..abc1234  main -&gt; main</p></div><div class="view-json"><pre>remote: 
+   def5678..abc1234  main -&gt; main</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>remote: 
 remote: Create a pull request for &#x27;main&#x27; on GitHub by visiting:
 remote:      https://github.com/example/project/pull/new/main
 remote: 
 To github.com:example/project.git
-   def5678..abc1234  main -&gt; main</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+   def5678..abc1234  main -&gt; main</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message user" id="msg-2025-12-24T10-01-00-000Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2025-12-24T10-01-00-000Z" class="timestamp-link"><time datetime="2025-12-24T10:01:00.000Z" data-timestamp="2025-12-24T10:01:00.000Z">2025-12-24T10:01:00.000Z</time></a></div>
 <details class="message-metadata">
@@ -779,16 +822,26 @@ Result:
 /project/tests/test_math.py">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
-<div class="tool-use" data-tool-id="toolu_glob_001"><div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">🔍</span> Glob<div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown tool-input-rendered">{
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Glob</span></summary>
+<div class="tool-pair-content">
+<div class="tool-use" data-tool-id="toolu_glob_001">
+<div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">🔍</span> Glob<div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered"><pre class="json-markdown">{
   <span class="json-key">"pattern"</span>: <span class="json-string-value">*<em>/</em>.py</span>,
   <span class="json-key">"path"</span>: <span class="json-string-value">/project</span>
-}</div><div class="view-json tool-input-rendered"><pre class="json">{
+}</pre></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered"><pre class="json">{
   &quot;pattern&quot;: &quot;**/*.py&quot;,
   &quot;path&quot;: &quot;/project&quot;
-}</pre></div></div><button class="expand-btn">Show more</button></div></div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>/project/math_utils.py
-/project/tests/test_math.py</p></div><div class="view-json"><pre>/project/math_utils.py
-/project/tests/test_math.py</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+}</pre></div></div><button class="expand-btn">Show more</button></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>/project/math_utils.py
+/project/tests/test_math.py</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>/project/math_utils.py
+/project/tests/test_math.py</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-01-15-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-01-15-000Z" class="timestamp-link"><time datetime="2025-12-24T10:01:15.000Z" data-timestamp="2025-12-24T10:01:15.000Z">2025-12-24T10:01:15.000Z</time></a></div>
 <details class="message-metadata">
@@ -819,7 +872,9 @@ Result:
 File edited successfully">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair"><div class="file-tool edit-tool" data-tool-id="toolu_edit_001">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Edit</span></summary>
+<div class="tool-pair-content"><div class="file-tool edit-tool" data-tool-id="toolu_edit_001">
 <div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">math_utils.py</span>
 <div class="view-toggle" role="tablist">
 <button class="view-toggle-tab active" role="tab" data-view="markdown">Markdown</button>
@@ -847,7 +902,12 @@ File edited successfully">Copy</button>
   &quot;new_string&quot;: &quot;    return a + b\n\n\ndef subtract(a: int, b: int) -&gt; int:\n    \&quot;\&quot;\&quot;Subtract b from a.\&quot;\&quot;\&quot;\n    return a - b\n&quot;
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>File edited successfully</p></div><div class="view-json"><pre>File edited successfully</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>File edited successfully</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>File edited successfully</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-01-25-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-01-25-000Z" class="timestamp-link"><time datetime="2025-12-24T10:01:25.000Z" data-timestamp="2025-12-24T10:01:25.000Z">2025-12-24T10:01:25.000Z</time></a></div>
 <details class="message-metadata">
@@ -887,16 +947,26 @@ Result:
 /project/math_utils.py:6:def subtract(a: int, b: int) -&gt; int:">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
-<div class="tool-use" data-tool-id="toolu_grep_001"><div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">🔎</span> Grep<div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown tool-input-rendered">{
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Grep</span></summary>
+<div class="tool-pair-content">
+<div class="tool-use" data-tool-id="toolu_grep_001">
+<div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">🔎</span> Grep<div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered"><pre class="json-markdown">{
   <span class="json-key">"pattern"</span>: <span class="json-string-value">def subtract</span>,
   <span class="json-key">"path"</span>: <span class="json-string-value">/project</span>,
   <span class="json-key">"output_mode"</span>: <span class="json-string-value">content</span>
-}</div><div class="view-json tool-input-rendered"><pre class="json">{
+}</pre></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered"><pre class="json">{
   &quot;pattern&quot;: &quot;def subtract&quot;,
   &quot;path&quot;: &quot;/project&quot;,
   &quot;output_mode&quot;: &quot;content&quot;
-}</pre></div></div><button class="expand-btn">Show more</button></div></div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>/project/math_utils.py:6:def subtract(a: int, b: int) -&gt; int:</p></div><div class="view-json"><pre>/project/math_utils.py:6:def subtract(a: int, b: int) -&gt; int:</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+}</pre></div></div><button class="expand-btn">Show more</button></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>/project/math_utils.py:6:def subtract(a: int, b: int) -&gt; int:</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>/project/math_utils.py:6:def subtract(a: int, b: int) -&gt; int:</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message user" id="msg-2025-12-24T10-02-00-000Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2025-12-24T10-02-00-000Z" class="timestamp-link"><time datetime="2025-12-24T10:02:00.000Z" data-timestamp="2025-12-24T10:02:00.000Z">2025-12-24T10:02:00.000Z</time></a></div>
 <details class="message-metadata">
@@ -944,7 +1014,9 @@ Exit code 1
 test_subtract - AssertionError: expected 5 but got None">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Bash</span></summary>
+<div class="tool-pair-content">
 <div class="tool-use bash-tool" data-tool-id="toolu_bash_004">
 <div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">$</span> Bash
 <div class="view-toggle" role="tablist">
@@ -961,11 +1033,16 @@ test_subtract - AssertionError: expected 5 but got None">Copy</button>
   &quot;description&quot;: &quot;Run tests with verbose output&quot;
 }</pre>
 </div>
-</div><div class="tool-result tool-error"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">✗</span> Error</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>Exit code 1
+</div><div class="tool-result tool-error">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">✗</span> Error</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>Exit code 1
 ===== FAILURES =====
-test_subtract - AssertionError: expected 5 but got None</p></div><div class="view-json"><pre>Exit code 1
+test_subtract - AssertionError: expected 5 but got None</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>Exit code 1
 ===== FAILURES =====
-test_subtract - AssertionError: expected 5 but got None</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+test_subtract - AssertionError: expected 5 but got None</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-02-15-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-02-15-000Z" class="timestamp-link"><time datetime="2025-12-24T10:02:15.000Z" data-timestamp="2025-12-24T10:02:15.000Z">2025-12-24T10:02:15.000Z</time></a></div>
 <details class="message-metadata">
@@ -1047,7 +1124,9 @@ Result:
 File edited successfully">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair"><div class="file-tool edit-tool" data-tool-id="toolu_edit_002">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Edit</span></summary>
+<div class="tool-pair-content"><div class="file-tool edit-tool" data-tool-id="toolu_edit_002">
 <div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">test_math.py</span> <span class="edit-replace-all">(replace all)</span>
 <div class="view-toggle" role="tablist">
 <button class="view-toggle-tab active" role="tab" data-view="markdown">Markdown</button>
@@ -1071,7 +1150,12 @@ File edited successfully">Copy</button>
   &quot;replace_all&quot;: true
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><p>File edited successfully</p></div><div class="view-json"><pre>File edited successfully</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><p>File edited successfully</p></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>File edited successfully</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-03-15-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-03-15-000Z" class="timestamp-link"><time datetime="2025-12-24T10:03:15.000Z" data-timestamp="2025-12-24T10:03:15.000Z">2025-12-24T10:03:15.000Z</time></a></div>
 <details class="message-metadata">
@@ -1102,7 +1186,9 @@ Result:
  2 files changed, 10 insertions(+), 1 deletion(-)">Copy</button>
 </summary>
 <div class="cell-content">
-<div class="tool-pair">
+<details class="tool-pair-collapsible" open>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">Bash</span></summary>
+<div class="tool-pair-content">
 <div class="tool-use bash-tool" data-tool-id="toolu_bash_005">
 <div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">$</span> Bash
 <div class="view-toggle" role="tablist">
@@ -1119,8 +1205,13 @@ Result:
   &quot;description&quot;: &quot;Commit the fix&quot;
 }</pre>
 </div>
-</div><div class="tool-result"><div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown"><div class="commit-card"><a href="https://github.com/example/project/commit/def5678"><span class="commit-card-hash">def5678</span> Add subtract function and fix tests</a></div><pre>2 files changed, 10 insertions(+), 1 deletion(-)</pre></div><div class="view-json"><pre>[main def5678] Add subtract function and fix tests
- 2 files changed, 10 insertions(+), 1 deletion(-)</pre></div></div><button class="expand-btn">Show more</button></div></div></div></div>
+</div><div class="tool-result">
+<div class="tool-result-header"><span class="tool-result-label"><span class="result-icon">←</span> Result</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><div class="commit-card"><a href="https://github.com/example/project/commit/def5678"><span class="commit-card-hash">def5678</span> Add subtract function and fix tests</a></div><pre>2 files changed, 10 insertions(+), 1 deletion(-)</pre></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><pre>[main def5678] Add subtract function and fix tests
+ 2 files changed, 10 insertions(+), 1 deletion(-)</pre></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+</details></div>
 </details></div></div>
 <div class="message assistant" id="msg-2025-12-24T10-03-25-000Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2025-12-24T10-03-25-000Z" class="timestamp-link"><time datetime="2025-12-24T10:03:25.000Z" data-timestamp="2025-12-24T10:03:25.000Z">2025-12-24T10:03:25.000Z</time></a></div>
 <details class="message-metadata">

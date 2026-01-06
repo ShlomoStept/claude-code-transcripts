@@ -146,11 +146,14 @@
 
 {# Generic tool use - description_html, input_markdown_html, input_json_html are pre-rendered so need |safe #}
 {% macro tool_use(tool_name, tool_icon, description_html, input_markdown_html, input_json_html, tool_id) %}
-<div class="tool-use" data-tool-id="{{ tool_id }}"><div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">{{ tool_icon }}</span> {{ tool_name }}<div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="tool-use" data-tool-id="{{ tool_id }}">
+<div class="tool-header"><span class="tool-call-label"><span class="call-icon">→</span> Call</span><span class="tool-icon">{{ tool_icon }}</span> {{ tool_name }}<div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
 {%- if description_html -%}
 <div class="tool-description">{{ description_html|safe }}</div>
 {%- endif -%}
-<div class="truncatable"><div class="truncatable-content"><div class="view-markdown tool-input-rendered">{{ input_markdown_html|safe }}</div><div class="view-json tool-input-rendered">{{ input_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered">{{ input_markdown_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered">{{ input_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
+</div>
 {%- endmacro %}
 
 {# Subagent tool (Task/Agent) - shows subagent metadata badge #}
@@ -182,19 +185,28 @@
 <div class="subagent-prompt-text">{{ subagent_info.prompt_preview }}</div>
 </div>
 {%- endif -%}
-<div class="truncatable"><div class="truncatable-content"><div class="view-markdown tool-input-rendered">{{ input_markdown_html|safe }}</div><div class="view-json tool-input-rendered">{{ input_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered">{{ input_markdown_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content"><div class="tool-input-rendered">{{ input_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
 </div>
 {%- endmacro %}
 
 {# Tool result - content_markdown_html and content_json_html are pre-rendered so need |safe #}
 {% macro tool_result(content_markdown_html, content_json_html, is_error) %}
 {%- set error_class = ' tool-error' if is_error else '' -%}
-<div class="tool-result{{ error_class }}"><div class="tool-result-header"><span class="tool-result-label">{% if is_error %}<span class="result-icon">✗</span> Error{% else %}<span class="result-icon">←</span> Result{% endif %}</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div><div class="truncatable"><div class="truncatable-content"><div class="view-markdown">{{ content_markdown_html|safe }}</div><div class="view-json">{{ content_json_html|safe }}</div></div><button class="expand-btn">Show more</button></div></div>
+<div class="tool-result{{ error_class }}">
+<div class="tool-result-header"><span class="tool-result-label">{% if is_error %}<span class="result-icon">✗</span> Error{% else %}<span class="result-icon">←</span> Result{% endif %}</span><div class="view-toggle" role="tablist"><button class="view-toggle-tab active" role="tab" aria-selected="true" data-view="markdown">Markdown</button><button class="view-toggle-tab" role="tab" aria-selected="false" data-view="json">JSON</button></div></div>
+<div class="view-markdown"><div class="truncatable"><div class="truncatable-content">{{ content_markdown_html|safe }}</div><button class="expand-btn">Show more</button></div></div>
+<div class="view-json"><div class="truncatable"><div class="truncatable-content">{{ content_json_html|safe }}</div><button class="expand-btn">Show more</button></div></div>
+</div>
 {%- endmacro %}
 
 {# Tool pair wrapper - tool_use_html/tool_result_html are pre-rendered #}
-{% macro tool_pair(tool_use_html, tool_result_html) %}
-<div class="tool-pair">{{ tool_use_html|safe }}{{ tool_result_html|safe }}</div>
+{# Now collapsible with details/summary element #}
+{% macro tool_pair(tool_use_html, tool_result_html, tool_name="Tool", is_collapsed=false) %}
+<details class="tool-pair-collapsible"{% if not is_collapsed %} open{% endif %}>
+<summary class="tool-pair-summary"><span class="tool-pair-toggle-icon"></span><span class="tool-pair-label">{{ tool_name }}</span></summary>
+<div class="tool-pair-content">{{ tool_use_html|safe }}{{ tool_result_html|safe }}</div>
+</details>
 {%- endmacro %}
 
 {# Collapsible cell wrapper for message sections #}

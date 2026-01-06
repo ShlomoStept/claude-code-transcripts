@@ -1,130 +1,95 @@
-# Implementation Plan: Multi-Phase Technical Debt and Phase 3 Planning
+# Implementation Plan: Fix Markdown/JSON Rendering Issues
 
 ## Goal Description
 
-Orchestrate a comprehensive implementation effort that:
-1. Merges all Phase 2 work to main branch
-2. Fixes critical technical debt issues identified in code analysis
-3. Completes any partial functionality
-4. Creates Phase 3 planning documentation
-5. Provides quality verification and grading
+Fix rendering issues in the claude-code-transcripts project related to how tool calls display markdown and JSON content. The issues include:
+1. Content duplication (markdown and JSON shown simultaneously)
+2. Hidden/non-scrollable long content
+3. JSON not wrapped in code blocks in Markdown mode
+4. No visual difference between modes for tool results
+5. Tool call/result sections not collapsible
+6. Potential subagent content truncation
 
-### Background Context
-- Current branch: `analysis/codebase-branch-review-2026-01-05`
-- Phase 2 work resides on: `fix/phase2-ui-regressions`
-- Overall quality score from analysis: 81.28/100
-- All 140 tests currently pass
+## Background Context
 
----
+The project converts Claude Code session JSON files to HTML transcripts. Tool calls have a view toggle allowing users to switch between "Markdown" and "JSON" views. The current implementation has several rendering bugs where content visibility and formatting don't behave correctly.
+
+### Current Architecture
+
+- **CSS**: Uses `.view-json { display: none; }` and `.view-markdown { display: block; }` with `.show-json` class to toggle visibility
+- **JS**: Tab click handlers toggle the `.show-json` class on containers
+- **Templates**: `macros.html` defines the HTML structure for tool rendering
 
 ## Items Requiring User Review
 
 > [!IMPORTANT]
-> **Breaking Changes**: None anticipated. All changes are additive or fix existing issues.
+> **Breaking Change**: The fix for Issue 2.1 (duplication) requires restructuring how `view-markdown` and `view-json` divs are nested within the truncatable wrapper. This may affect any custom CSS users have applied.
 
 > [!IMPORTANT]
-> **Design Decision**: The view-toggle pattern duplication fix (extracting to shared macro) will change internal template structure but maintain identical output.
+> **Design Decision**: For Issue 2.5 (collapsible tool sections), I propose using HTML `<details>` elements similar to the existing cell collapsible behavior. Alternative: custom JS-based accordion.
 
-> [!IMPORTANT]
-> **Architecture**: Module splitting of `__init__.py` is documented as future work in Phase 3, not executed now.
+## Root Cause Analysis
 
----
+### Issue 2.1: Content Duplication
+In `macros.html` line 153 (tool_use macro), both `view-markdown` and `view-json` are inside the same `truncatable-content` div:
+```html
+<div class="truncatable"><div class="truncatable-content">
+  <div class="view-markdown tool-input-rendered">{{ input_markdown_html|safe }}</div>
+  <div class="view-json tool-input-rendered">{{ input_json_html|safe }}</div>
+</div>
+```
 
-## Proposed Changes by Component
+The CSS `.view-json { display: none; }` should hide JSON, but the nesting within truncatable causes both to render due to truncatable's overflow handling.
 
-### PHASE 1: PR Creation [fix/phase2-ui-regressions -> main]
+### Issue 2.2: Hidden Long Content
+The truncatable CSS sets `max-height: 200px; overflow: hidden;` but the view containers may not properly inherit scrolling when expanded.
 
-| Action | File | Description |
-|--------|------|-------------|
-| PR | N/A | Create comprehensive PR summarizing all Phase 2 features |
+### Issue 2.3: JSON Not in Code Block
+The `format_json()` function wraps output in `<pre class="json">`, but the markdown view uses `render_json_with_markdown()` which does NOT wrap in a code block.
 
-**Features to Document in PR:**
-- Collapsible cell system (thinking/response/tools)
-- Markdown/JSON view toggle
-- Per-cell copy buttons with ARIA accessibility
-- Message metadata subsection
-- Tool type icons (14 tools)
-- UI regression fixes (JSON display, tabs alignment)
+### Issue 2.4: Tool Result Mode Differentiation
+Tool results use the same pre-rendered content for both views. Markdown view should show rendered content, JSON view should show raw JSON.
 
----
+### Issue 2.5: Non-Collapsible Sections
+Tool pairs are wrapped in `<div class="tool-pair">` but not in `<details>` elements.
 
-### PHASE 2: Critical Issue Fixes
+## Proposed Changes
 
-| Action | File | Description |
-|--------|------|-------------|
-| [MODIFY] | `/tests/test_generate_html.py` | Fix duplicate test method (silent override) |
-| [MODIFY] | `/src/claude_code_transcripts/__init__.py` | Refactor global `_github_repo` variable for thread safety |
-| [MODIFY] | `/src/claude_code_transcripts/templates/macros.html` | Extract view-toggle pattern to shared macro |
-| [MODIFY] | `/src/claude_code_transcripts/__init__.py` | Add Clipboard API fallback for older browsers |
+### [MODIFY] `src/claude_code_transcripts/templates/macros.html`
 
----
+1. **Fix tool_use macro (line 148-154)**: Move view-markdown and view-json outside truncatable to prevent display conflicts
+2. **Fix subagent_tool macro (line 157-187)**: Same restructuring as tool_use
+3. **Fix tool_result macro (line 189-193)**: Ensure proper view separation with distinct content
+4. **Add collapsible tool_pair macro**: Wrap with `<details>` element for collapse/expand
 
-### PHASE 3: Missing Functionality
+### [MODIFY] `src/claude_code_transcripts/__init__.py`
 
-| Action | File | Description |
-|--------|------|-------------|
-| [MODIFY] | `/src/claude_code_transcripts/templates/macros.html` | Complete B.3 Input/Output toggle if partial |
-| [MODIFY] | `/tests/test_generate_html.py` | Add tests for new functionality |
-
----
-
-### PHASE 4: Phase 3 Planning
-
-| Action | File | Description |
-|--------|------|-------------|
-| [NEW] | `/PHASE3_PLAN.md` | Comprehensive Phase 3 implementation roadmap |
-
-**Topics to Cover:**
-- A.4 Recursive Nesting design
-- C.1 Subagent Detection specification
-- Architecture improvements (module splitting)
-- CSS/JS externalization proposal
-
----
-
-### PHASE 5: Quality Verification
-
-| Action | File | Description |
-|--------|------|-------------|
-| [MODIFY] | `/PLAN.md` | Update with final grading report |
-| [NEW] | `/walkthrough.md` | Document all changes with verification evidence |
-
----
+1. **Fix `render_json_with_markdown()` function**: Wrap output in `<pre class="json-markdown">` for proper code block styling
+2. **Update CSS (line 1784-1787)**: Ensure view toggle CSS properly hides/shows content
+3. **Add CSS for `.json-markdown`**: Style JSON in markdown mode with code block appearance
+4. **Add CSS for collapsible tool pairs**: Style new `<details>` elements for tool pairs
+5. **Review JS view toggle handlers**: Ensure they work with new structure
 
 ## Verification Plan
 
 ### Automated Tests
-1. Run full test suite: `uv run pytest`
-2. Run code formatting check: `uv run black . --check`
-3. Verify no regressions in existing functionality
+- [ ] Run `uv run pytest` - all tests must pass
+- [ ] Run `uv run black .` - code must be formatted
+- [ ] Snapshot tests may need updating if output changes
 
-### Manual Verification Steps
-1. Generate sample HTML output and visually inspect
-2. Test collapsible cells functionality
-3. Test copy buttons in multiple browsers (if possible)
-4. Verify view toggle works correctly
-5. Confirm metadata displays properly
+### Manual Verification
+- [ ] Generate HTML from a sample session with tool calls
+- [ ] Verify only one view (markdown OR JSON) displays at a time
+- [ ] Test view toggle switches content correctly
+- [ ] Verify long content is scrollable when expanded
+- [ ] Confirm JSON has code block styling regardless of mode
+- [ ] Test tool result shows visual difference between modes
+- [ ] Verify tool call/result sections are collapsible
+- [ ] Check subagent content is not truncated
 
----
+## File Change Summary
 
-## Execution Order
-
-1. **PHASE 1**: Create PR for fix/phase2-ui-regressions (no code changes)
-2. **PHASE 2**: Create branch `fix/technical-debt` from `fix/phase2-ui-regressions`, fix critical issues
-3. **PHASE 3**: Implement any missing functionality on same branch
-4. **PHASE 5**: Run verification, update PR
-5. **PHASE 4**: Create `feature/phase3-planning` branch, create PHASE3_PLAN.md
-
----
-
-## Risk Assessment
-
-| Risk | Likelihood | Mitigation |
-|------|------------|------------|
-| Test failures after refactoring | Low | Run tests after each change |
-| Breaking changes to HTML output | Low | Snapshot tests catch this |
-| View-toggle macro extraction issues | Medium | Test thoroughly before committing |
-
----
-
-**Awaiting user approval to proceed with execution.**
+| File | Action | Description |
+|------|--------|-------------|
+| `src/claude_code_transcripts/templates/macros.html` | MODIFY | Fix view toggle HTML structure, add collapsible tool pairs |
+| `src/claude_code_transcripts/__init__.py` | MODIFY | Fix CSS for view toggles, add JSON-in-markdown styling |

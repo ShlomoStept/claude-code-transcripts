@@ -620,6 +620,66 @@ class TestRenderContentBlock:
         assert '"type": "tool_use"' not in result
         assert result == snapshot_html
 
+    def test_tool_result_content_block_array_as_list(self, snapshot_html):
+        """Test that tool_result with content as a Python list renders properly.
+
+        This is a critical bug fix test: when content is a Python list (not a JSON
+        string), the markdown view should still render the content blocks, not show
+        raw JSON.
+        """
+        block = {
+            "type": "tool_result",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "## Deployment Report\n\n### Findings\n\n- Issue 1\n- Issue 2",
+                },
+                {
+                    "type": "text",
+                    "text": "agentId: abc1234 (for resuming)",
+                },
+            ],
+            "is_error": False,
+        }
+        result = render_content_block(block)
+        # Should render markdown content, not raw JSON
+        assert "<h2>" in result or "Deployment Report</p>" in result
+        assert "Findings" in result
+        assert "Issue 1" in result
+        # Should NOT show raw JSON structure in the markdown view
+        # The view-markdown div should contain rendered HTML, not JSON
+        assert 'class="view-markdown"' in result
+        # Check that the markdown view doesn't contain escaped JSON type field
+        import re
+
+        md_view_match = re.search(
+            r'class="view-markdown"[^>]*>(.*?)class="view-json"', result, re.DOTALL
+        )
+        if md_view_match:
+            md_view_content = md_view_match.group(1)
+            # Markdown view should NOT contain the raw JSON structure
+            assert "&quot;type&quot;: &quot;text&quot;" not in md_view_content
+        assert result == snapshot_html
+
+    def test_tool_result_content_block_array_list_with_multiple_blocks(self):
+        """Test that multiple content blocks in a Python list all render."""
+        block = {
+            "type": "tool_result",
+            "content": [
+                {"type": "text", "text": "First block"},
+                {"type": "text", "text": "Second block"},
+                {"type": "text", "text": "Third block"},
+            ],
+            "is_error": False,
+        }
+        result = render_content_block(block)
+        # All three blocks should be rendered
+        assert "First block" in result
+        assert "Second block" in result
+        assert "Third block" in result
+        # Each should be in its own assistant-text div
+        assert result.count("assistant-text") >= 3
+
 
 class TestStripAnsi:
     """Tests for ANSI escape stripping."""

@@ -381,7 +381,7 @@ def extract_agent_id_from_result(tool_result_content):
             # "agent_id": "abc123"
             r'agent_id["\']?\s*[:\s]\s*["\']?([a-zA-Z0-9_-]{8,})',
             # "Started agent abc123def456789012"
-            r"Started\s+agent\s+(?:with\s+ID[:\s]+)?([a-zA-Z0-9_-]{10,})",
+            r"Started\s+agent\s+(?:with\s+ID[:\s]+)?([a-zA-Z0-9_-]{8,})",
         ]
         for pattern in patterns:
             match = re.search(pattern, tool_result_content, re.IGNORECASE)

@@ -14,6 +14,7 @@ from claude_code_transcripts import (
     render_json_with_markdown,
     format_json,
     is_json_like,
+    is_content_block_list,
     render_todo_write,
     render_write_tool,
     render_edit_tool,
@@ -612,6 +613,75 @@ class TestRenderContentBlock:
         assert "List files" in result
         assert '"type": "tool_use"' not in result
         assert result == snapshot_html
+
+    def test_tool_result_content_block_list_renders_markdown(self, snapshot_html):
+        """Test that tool_result with content as Python list renders markdown properly."""
+        block = {
+            "type": "tool_result",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "## Report\n\n- Item 1\n- Item 2\n\n```python\ncode\n```",
+                }
+            ],
+            "is_error": False,
+        }
+        result = render_content_block(block)
+        # Should render as HTML, not raw JSON
+        assert "<h2>" in result
+        assert "<li>" in result
+        # Should not show raw JSON structure
+        assert '"type": "text"' not in result
+        assert result == snapshot_html
+
+    def test_tool_result_content_block_list_with_multiple_blocks(self, snapshot_html):
+        """Test that tool_result with multiple text blocks renders all as markdown."""
+        block = {
+            "type": "tool_result",
+            "content": [
+                {"type": "text", "text": "## First Section\n\n- Point A"},
+                {"type": "text", "text": "## Second Section\n\n- Point B"},
+            ],
+            "is_error": False,
+        }
+        result = render_content_block(block)
+        # Both sections should be rendered
+        assert "First Section" in result
+        assert "Second Section" in result
+        assert "Point A" in result
+        assert "Point B" in result
+        # Should not show raw JSON
+        assert '"type": "text"' not in result
+        assert result == snapshot_html
+
+
+class TestIsContentBlockList:
+    """Tests for is_content_block_list helper function."""
+
+    def test_empty_list(self):
+        assert is_content_block_list([]) is False
+
+    def test_list_with_text_block(self):
+        assert is_content_block_list([{"type": "text", "text": "hello"}]) is True
+
+    def test_list_with_image_block(self):
+        assert is_content_block_list([{"type": "image", "source": {}}]) is True
+
+    def test_list_with_mixed_blocks(self):
+        content = [{"type": "text", "text": "hello"}, {"type": "image", "source": {}}]
+        assert is_content_block_list(content) is True
+
+    def test_list_without_type(self):
+        assert is_content_block_list([{"key": "value"}]) is False
+
+    def test_not_a_list_string(self):
+        assert is_content_block_list("string") is False
+
+    def test_not_a_list_dict(self):
+        assert is_content_block_list({"type": "text"}) is False
+
+    def test_not_a_list_none(self):
+        assert is_content_block_list(None) is False
 
 
 class TestStripAnsi:

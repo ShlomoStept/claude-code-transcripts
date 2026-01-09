@@ -137,6 +137,26 @@ def is_content_block_array(text):
         return False
 
 
+def is_content_block_list(content):
+    """Check if content is a Python list of content blocks.
+
+    Args:
+        content: Content to check.
+
+    Returns:
+        True if content is a list containing dict items with 'type' keys.
+    """
+    if not isinstance(content, list):
+        return False
+    if not content:
+        return False
+    # Check if items look like content blocks
+    for item in content:
+        if isinstance(item, dict) and "type" in item:
+            return True
+    return False
+
+
 def render_content_block_array(blocks):
     """Render an array of content blocks.
 
@@ -1077,8 +1097,16 @@ def render_content_block(block):
                         content_markdown_html = format_json(content)
                     else:
                         content_markdown_html = render_markdown_text(content)
-        elif isinstance(content, list) or is_json_like(content):
-            content_markdown_html = format_json(content)
+        elif isinstance(content, list):
+            # Check if it's a content block array that should be rendered as markdown
+            if is_content_block_list(content):
+                rendered = render_content_block_array(content)
+                if rendered:
+                    content_markdown_html = rendered
+                else:
+                    content_markdown_html = format_json(content)
+            else:
+                content_markdown_html = format_json(content)
         else:
             content_markdown_html = format_json(content)
         return _macros.tool_result(content_markdown_html, content_json_html, is_error)

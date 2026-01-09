@@ -1,130 +1,231 @@
-# Implementation Plan: Multi-Phase Technical Debt and Phase 3 Planning
+# Repository Cleanup and Upstream PR Preparation - Implementation Plan
 
-## Goal Description
+## Goal
 
-Orchestrate a comprehensive implementation effort that:
-1. Merges all Phase 2 work to main branch
-2. Fixes critical technical debt issues identified in code analysis
-3. Completes any partial functionality
-4. Creates Phase 3 planning documentation
-5. Provides quality verification and grading
-
-### Background Context
-- Current branch: `analysis/codebase-branch-review-2026-01-05`
-- Phase 2 work resides on: `fix/phase2-ui-regressions`
-- Overall quality score from analysis: 81.28/100
-- All 140 tests currently pass
+Clean up this fork of `simonw/claude-code-transcripts` and prepare a comprehensive PR to submit all improvements upstream.
 
 ---
 
-## Items Requiring User Review
+## Phase 1 Analysis Summary
+
+### Branches (11 local, 23 remote)
+
+**Local Branches:**
+| Branch | Status | Action |
+|--------|--------|--------|
+| `main` | Primary branch with all merged features | KEEP |
+| `cleanup/prepare-upstream-pr` | Current work branch | KEEP (temporary) |
+| `analysis/codebase-branch-review-2026-01-05` | Analysis only, no code | DELETE |
+| `evaluation/markdown-json-rendering-fixes` | Open PR #13 | CLOSE PR, DELETE |
+| `feature/phase2-collapsible-cells` | Merged to main | DELETE |
+| `feature/phase3-planning` | Planning docs only | DELETE |
+| `feature/phase3-subagent-detection` | Open PR #10, has FEATURE_PROPOSALS.md | EVALUATE |
+| `feature/quality-improvements` | Stale | DELETE |
+| `fix/markdown-json-rendering-v2` | Open PR #12 | CLOSE PR, DELETE |
+| `fix/markdown-rendering-issues` | Open PR #11 | CLOSE PR, DELETE |
+| `fix/technical-debt` | Merged to main | DELETE |
+
+**Remote-only Branches to Delete:**
+- `origin/claude/*` - Claude-generated feature branches (not merged)
+- `origin/copilot/*` - Copilot analysis branches
+
+### Open PRs (4 open, 6 merged, 3 closed)
+
+| PR | Title | Branch | Action |
+|----|-------|--------|--------|
+| #13 | Fix content block array rendering | evaluation/markdown-json-rendering-fixes | CLOSE |
+| #12 | Fix markdown/JSON rendering issues (v2) | fix/markdown-json-rendering-v2 | CLOSE |
+| #11 | Fix Markdown/JSON rendering issues | fix/markdown-rendering-issues | CLOSE |
+| #10 | Phase 3: C.1 Subagent Detection | feature/phase3-subagent-detection | EVALUATE - may have useful code |
+
+### Large Files in Git History
+
+5 PNG screenshots in `docs/snapshots_of_current_UI/` totaling ~9MB:
+- Screenshot 2025-12-31 at 11.31.34 PM.png (1.75MB)
+- Screenshot 2025-12-31 at 11.31.42 PM.png (1.87MB)
+- Screenshot 2025-12-31 at 11.31.46 PM.png (1.82MB)
+- Screenshot 2025-12-31 at 11.31.53 PM.png (2.05MB)
+- Screenshot 2025-12-31 at 11.52.44 PM.png (1.34MB)
+
+### Documents to Remove
+
+**Internal Planning Documents (remove from upstream PR):**
+- `PLAN.md` - Phase 2 regression fix planning
+- `TASKS.md` - Internal task tracking
+- `EVALUATION_REPORT.md` - Internal evaluation
+- `TODO.md` - Internal todos
+- `implementation_plan.md` - Current planning doc
+- `task.md` - Current task tracking
+- `walkthrough.md` - Internal walkthrough
+- `2025-12-31-systemrules.txt` - System rules transcript
+- `2026-01-01-systemrules.txt` - System rules transcript
+- `2026-01-06-systemrules.txt` - System rules transcript
+- `docs/IMPLEMENTATION_PLAN.md` - Internal planning
+- `docs/snapshots_of_current_UI/` - Internal screenshots
+
+**Documents to Keep:**
+- `README.md` - Updated with improvements
+- `AGENTS.md` - Development guide (useful for contributors)
+- `CLAUDE.md` - Project instructions
+
+---
+
+## Phase 2: Document Cleanup
 
 > [!IMPORTANT]
-> **Breaking Changes**: None anticipated. All changes are additive or fix existing issues.
+> This will remove internal planning documents that should not be in the upstream PR.
 
-> [!IMPORTANT]
-> **Design Decision**: The view-toggle pattern duplication fix (extracting to shared macro) will change internal template structure but maintain identical output.
-
-> [!IMPORTANT]
-> **Architecture**: Module splitting of `__init__.py` is documented as future work in Phase 3, not executed now.
-
----
-
-## Proposed Changes by Component
-
-### PHASE 1: PR Creation [fix/phase2-ui-regressions -> main]
-
-| Action | File | Description |
-|--------|------|-------------|
-| PR | N/A | Create comprehensive PR summarizing all Phase 2 features |
-
-**Features to Document in PR:**
-- Collapsible cell system (thinking/response/tools)
-- Markdown/JSON view toggle
-- Per-cell copy buttons with ARIA accessibility
-- Message metadata subsection
-- Tool type icons (14 tools)
-- UI regression fixes (JSON display, tabs alignment)
+**Files to Remove:**
+```
+git rm PLAN.md TASKS.md EVALUATION_REPORT.md TODO.md
+git rm implementation_plan.md task.md walkthrough.md
+git rm 2025-12-31-systemrules.txt 2026-01-01-systemrules.txt 2026-01-06-systemrules.txt
+git rm -r docs/
+```
 
 ---
 
-### PHASE 2: Critical Issue Fixes
+## Phase 3: Git History Cleanup
 
-| Action | File | Description |
-|--------|------|-------------|
-| [MODIFY] | `/tests/test_generate_html.py` | Fix duplicate test method (silent override) |
-| [MODIFY] | `/src/claude_code_transcripts/__init__.py` | Refactor global `_github_repo` variable for thread safety |
-| [MODIFY] | `/src/claude_code_transcripts/templates/macros.html` | Extract view-toggle pattern to shared macro |
-| [MODIFY] | `/src/claude_code_transcripts/__init__.py` | Add Clipboard API fallback for older browsers |
+> [!WARNING]
+> Purging files from git history is a destructive operation. This will rewrite history and require force push.
 
----
+**Files to Purge from History:**
+- `docs/snapshots_of_current_UI/**/*.png` (9MB of screenshots)
+- `*-systemrules.txt` files
 
-### PHASE 3: Missing Functionality
-
-| Action | File | Description |
-|--------|------|-------------|
-| [MODIFY] | `/src/claude_code_transcripts/templates/macros.html` | Complete B.3 Input/Output toggle if partial |
-| [MODIFY] | `/tests/test_generate_html.py` | Add tests for new functionality |
-
----
-
-### PHASE 4: Phase 3 Planning
-
-| Action | File | Description |
-|--------|------|-------------|
-| [NEW] | `/PHASE3_PLAN.md` | Comprehensive Phase 3 implementation roadmap |
-
-**Topics to Cover:**
-- A.4 Recursive Nesting design
-- C.1 Subagent Detection specification
-- Architecture improvements (module splitting)
-- CSS/JS externalization proposal
+**Method:**
+```bash
+# Using git filter-repo (preferred)
+pip install git-filter-repo
+git filter-repo --path docs/snapshots_of_current_UI --invert-paths
+git filter-repo --path-glob '*-systemrules.txt' --invert-paths
+```
 
 ---
 
-### PHASE 5: Quality Verification
+## Phase 4: Branch and PR Cleanup
 
-| Action | File | Description |
-|--------|------|-------------|
-| [MODIFY] | `/PLAN.md` | Update with final grading report |
-| [NEW] | `/walkthrough.md` | Document all changes with verification evidence |
+**PRs to Close:**
+- #13, #12, #11 - Superseded by merged work
+- #10 - Evaluate if subagent detection code should be merged first
+
+**Local Branches to Delete:**
+- analysis/codebase-branch-review-2026-01-05
+- feature/phase2-collapsible-cells
+- feature/phase3-planning
+- feature/quality-improvements
+- fix/markdown-json-rendering-v2
+- fix/markdown-rendering-issues
+- fix/technical-debt
+
+**Remote Branches to Delete:**
+- All `origin/claude/*` branches
+- All `origin/copilot/*` branches
+- Branches for closed/merged PRs
+
+---
+
+## Phase 5: Merge Remaining Features
+
+**Check PR #10 (Subagent Detection):**
+- Review if the feature is complete and tested
+- If valuable, merge to main before cleanup
+
+---
+
+## Phase 6: Upstream PR
+
+**Commits Ahead of Upstream:** 32 commits
+
+**Key Features to Highlight:**
+
+1. **ANSI Escape Code Sanitization**
+   - Strips terminal escape codes from tool output
+   - Supports CSI, OSC, and C1 sequences
+
+2. **Content Block Array Rendering**
+   - Properly renders `[{"type": "text", ...}]` arrays as markdown
+   - Supports text and thinking blocks
+
+3. **Syntax Highlighting**
+   - Pygments integration for code blocks
+   - Supports 500+ languages
+
+4. **Copy Buttons**
+   - Per-code-block copy buttons
+   - Clipboard API with fallback
+
+5. **Tool Call/Result Pairing**
+   - Groups tool_use with corresponding tool_result
+   - Matched by tool ID
+
+6. **Collapsible Cell Structure**
+   - Thinking cell (closed by default)
+   - Response cell (open by default)
+   - Tools cell (closed by default, shows count)
+
+7. **Per-Cell Copy Buttons**
+   - Copy entire cell contents
+   - ARIA labels for accessibility
+
+8. **Markdown Rendering in Tools**
+   - Tool descriptions render as markdown
+   - JSON string values with inline markdown
+
+9. **Message Metadata**
+   - Character count
+   - Token estimate
+   - Tool call counts
+
+10. **Tool Icons**
+    - 14 tool-specific icons
+    - Markdown/JSON view toggle
+
+**Test Coverage:**
+- 140+ tests passing
+- Comprehensive snapshot tests
 
 ---
 
 ## Verification Plan
 
-### Automated Tests
-1. Run full test suite: `uv run pytest`
-2. Run code formatting check: `uv run black . --check`
-3. Verify no regressions in existing functionality
+1. **Automated Tests:**
+   ```bash
+   uv run pytest
+   uv run black . --check
+   ```
 
-### Manual Verification Steps
-1. Generate sample HTML output and visually inspect
-2. Test collapsible cells functionality
-3. Test copy buttons in multiple browsers (if possible)
-4. Verify view toggle works correctly
-5. Confirm metadata displays properly
+2. **Manual Verification:**
+   - Generate HTML from sample session
+   - Verify all features render correctly
+   - Test in multiple browsers
 
----
-
-## Execution Order
-
-1. **PHASE 1**: Create PR for fix/phase2-ui-regressions (no code changes)
-2. **PHASE 2**: Create branch `fix/technical-debt` from `fix/phase2-ui-regressions`, fix critical issues
-3. **PHASE 3**: Implement any missing functionality on same branch
-4. **PHASE 5**: Run verification, update PR
-5. **PHASE 4**: Create `feature/phase3-planning` branch, create PHASE3_PLAN.md
+3. **Diff Review:**
+   - Review final diff against upstream
+   - Ensure no internal documents included
+   - Verify git history is clean
 
 ---
 
-## Risk Assessment
+## Proposed Changes Summary
 
-| Risk | Likelihood | Mitigation |
-|------|------------|------------|
-| Test failures after refactoring | Low | Run tests after each change |
-| Breaking changes to HTML output | Low | Snapshot tests catch this |
-| View-toggle macro extraction issues | Medium | Test thoroughly before committing |
+| Component | Action |
+|-----------|--------|
+| Internal docs (10+ files) | DELETE |
+| Screenshot images (5 files) | DELETE + PURGE from history |
+| Open PRs (4) | CLOSE |
+| Local branches (9) | DELETE |
+| Remote branches (15+) | DELETE |
+| Upstream PR | CREATE with comprehensive description |
 
 ---
 
-**Awaiting user approval to proceed with execution.**
+> [!IMPORTANT]
+> **User Approval Required**
+>
+> Please review this plan and confirm:
+> 1. OK to close PRs #10, #11, #12, #13?
+> 2. OK to delete internal planning documents?
+> 3. OK to purge screenshots from git history (requires force push)?
+> 4. Any documents you want to keep that are listed for removal?
